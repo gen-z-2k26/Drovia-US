@@ -43,6 +43,12 @@ function afterpayAddress(address: Address) {
   };
 }
 
+function userAgent() {
+  const id = process.env.AFTERPAY_MERCHANT_ID?.trim() || "unknown";
+  const site = process.env.NEXT_PUBLIC_SITE_URL?.trim() || "https://orvexo.us";
+  return `EcomBuilder/1.0.0 (Next.js/16; Merchant/${id}) ${site}`;
+}
+
 async function afterpayFetch<T>(path: string, body: unknown): Promise<T> {
   const response = await fetch(`${afterpayBase()}${path}`, {
     method: "POST",
@@ -50,14 +56,23 @@ async function afterpayFetch<T>(path: string, body: unknown): Promise<T> {
       Authorization: authHeader(),
       "Content-Type": "application/json",
       Accept: "application/json",
-      "User-Agent": "EcomBuilder/1.0 (Next.js Storefront)",
+      "User-Agent": userAgent(),
     },
     body: JSON.stringify(body),
   });
-  const data = (await response.json()) as T & { message?: string; errorCode?: string };
-  if (!response.ok) {
-    throw new Error(data.message || data.errorCode || "Afterpay request failed.");
+  const raw = await response.text();
+  let data: (T & { message?: string; errorCode?: string }) | null = null;
+  try {
+    data = raw ? (JSON.parse(raw) as T & { message?: string; errorCode?: string }) : null;
+  } catch {
+    data = null;
   }
+  if (!response.ok) {
+    throw new Error(
+      data?.message || data?.errorCode || raw.slice(0, 180) || "Afterpay request failed.",
+    );
+  }
+  if (!data) throw new Error("Afterpay returned an empty response.");
   return data;
 }
 

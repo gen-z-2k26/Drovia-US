@@ -276,7 +276,7 @@ export function CheckoutPage() {
   const showRates = cart.needsShipping && cart.shippingRates.length > 0;
 
   return (
-    <div className="min-h-full bg-[#f3f4f6]">
+    <div className="min-h-full bg-background">
       <div className="mx-auto grid w-full max-w-[1240px] items-start gap-x-16 px-6 py-8 lg:grid-cols-[minmax(0,1fr)_420px] lg:px-10 lg:py-12">
       <div className="min-w-0">
       <header>
@@ -312,7 +312,7 @@ export function CheckoutPage() {
         <>
           <button
             type="button"
-            className="mt-6 flex w-full items-center justify-between rounded-[8px] border border-[#e6e6ea] bg-white px-4 py-3 text-sm lg:hidden"
+            className="mt-6 flex w-full items-center justify-between rounded-[8px] border border-border bg-card px-4 py-3 text-sm lg:hidden"
             onClick={() => setShowSummary((open) => !open)}
           >
             <span className="flex items-center gap-2 font-medium">
@@ -329,7 +329,7 @@ export function CheckoutPage() {
             </span>
           </button>
           <div className={cn("mt-4 w-full lg:hidden", showSummary ? "block" : "hidden")}>
-            <div className="rounded-[8px] border border-[#e7e7eb] bg-white p-5 shadow-[0_1px_2px_rgba(16,16,16,0.04)]">
+            <div className="rounded-[8px] border border-border bg-card p-5">
               <OrderSummary cart={cart} />
               <PromiseCard />
             </div>
@@ -527,11 +527,11 @@ export function CheckoutPage() {
               <section className="space-y-3">
                 <h2 className="text-[1.05rem] font-semibold tracking-tight">Shipping method</h2>
                 {!shippingReady ? (
-                  <p className="rounded-[8px] bg-[#eceef2] px-4 py-5 text-center text-sm text-muted-foreground">
+                  <p className="rounded-[8px] bg-muted px-4 py-5 text-center text-sm text-muted-foreground">
                     Enter your address to see shipping options.
                   </p>
                 ) : showRates ? (
-                  <div className="overflow-hidden rounded-[8px] border border-[#e6e6ea] bg-white">
+                  <div className="overflow-hidden rounded-[8px] border border-border bg-card">
                     {cart.shippingRates.map((rate, index) => (
                       <label
                         key={`${rate.packageId}-${rate.rateId}`}
@@ -682,7 +682,7 @@ export function CheckoutPage() {
 
       {cart.items.length ? (
         <aside className="hidden self-start lg:block">
-          <div className="rounded-[8px] border border-[#e6e6ea] bg-white p-6 shadow-none">
+          <div className="rounded-[8px] border border-border bg-card p-6">
             <OrderSummary cart={cart} />
             <PromiseCard />
           </div>
@@ -734,10 +734,10 @@ function PaymentMethodPicker({
             <label
               key={method.kind}
               className={cn(
-                "flex items-center gap-3 rounded-[8px] border bg-white px-4 py-3.5",
+                "flex items-center gap-3 rounded-[8px] border bg-card px-4 py-3.5",
                 selected
-                  ? "border-primary bg-[#f4fafd]"
-                  : "border-[#e6e6ea]",
+                  ? "border-primary bg-primary/10"
+                  : "border-border",
                 readOnly ? "" : "cursor-pointer",
               )}
             >
@@ -786,7 +786,7 @@ function PaymentMethodPicker({
 }
 
 const fieldShell =
-  "h-[52px] w-full rounded-[8px] border border-[#e4e4e8] bg-white px-4 text-sm shadow-none placeholder:text-[#9ca3af] focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20";
+  "h-[52px] w-full rounded-[8px] border border-border bg-card px-4 text-sm text-foreground shadow-none placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20";
 
 function Field({
   id,
@@ -953,19 +953,19 @@ function OrderSummary({ cart }: { cart: StoreCart }) {
         </span>
       </div>
       {shippingFree ? (
-        <p className="mt-4 inline-flex items-center gap-1 rounded-full bg-[#e7f8ee] px-2 py-0.5 text-[11px] font-semibold tracking-wide text-[#178a45]">
+        <p className="mt-4 inline-flex items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 text-[11px] font-semibold tracking-wide text-foreground">
           Free shipping
         </p>
       ) : null}
       <ul className="mt-5 space-y-4">
         {cart.items.map((item) => (
           <li key={item.key} className="flex items-start gap-3">
-            <div className="relative size-14 shrink-0 overflow-hidden rounded-[6px] bg-[#f3f4f6]">
+            <div className="relative size-14 shrink-0 overflow-hidden rounded-[6px] bg-muted">
               <StoreImage src={item.image} alt="" sizes="56px" />
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-sm font-medium leading-snug">{item.name}</p>
-              <div className="mt-1 flex items-center gap-2 text-xs text-[#6b7280]">
+              <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
                 <button
                   type="button"
                   className="px-0.5 disabled:opacity-40"
@@ -1062,7 +1062,7 @@ function OrderSummary({ cart }: { cart: StoreCart }) {
         {cart.totals.discount > 0 ? (
           <div className="flex justify-between">
             <span className="text-muted-foreground">Item savings</span>
-            <span className="tabular-nums font-medium text-[#e11d48]">
+            <span className="tabular-nums font-medium text-primary">
               -
               {formatPrice(
                 cart.totals.discount,
@@ -1077,7 +1077,7 @@ function OrderSummary({ cart }: { cart: StoreCart }) {
           <span
             className={cn(
               "tabular-nums",
-              shippingFree && "font-semibold text-[#e11d48]",
+              shippingFree && "font-semibold text-primary",
             )}
           >
             {!cart.hasCalculatedShipping
@@ -1134,7 +1134,7 @@ function PromiseCard() {
     },
   ];
   return (
-    <div className="mt-6 border-t border-[#ececef] pt-5">
+    <div className="mt-6 border-t border-border pt-5">
       <h3 className="text-[1.05rem] font-semibold tracking-tight">The Orvexo promise</h3>
       <p className="mt-1 text-xs text-muted-foreground">
         Every order, every time.
@@ -1142,7 +1142,7 @@ function PromiseCard() {
       <ul className="mt-4 space-y-3.5">
         {items.map((item) => (
           <li key={item.title} className="flex gap-3">
-            <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full bg-[#fde8ee] text-[#e11d48]">
+            <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
               <item.icon className="size-4" aria-hidden />
             </span>
             <span>

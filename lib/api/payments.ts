@@ -48,6 +48,7 @@ export async function getEnabledCheckoutMethods(): Promise<
       if (!gateway.id || !isWooGatewayEnabled(gateway.enabled)) continue;
       const kind = checkoutKindForGateway(gateway.id);
       if (!kind || found.has(kind)) continue;
+      if (kind === "afterpay" && !isAfterpayConfigured()) continue;
       found.set(kind, {
         kind,
         wooId: gateway.id,
