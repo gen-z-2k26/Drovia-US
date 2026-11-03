@@ -1,5 +1,6 @@
 import { isWooConfigured, isWooUnreachable, wooGet } from "@/lib/api/client";
 import { isAfterpayConfigured } from "@/lib/afterpay";
+import { isPayPalConfigured } from "@/lib/paypal";
 import type { CheckoutPaymentKind, CheckoutPaymentMethod } from "@/lib/types";
 
 type WooGateway = {
@@ -15,21 +16,24 @@ export function isWooGatewayEnabled(value: unknown) {
 
 export function checkoutKindForGateway(id: string): CheckoutPaymentKind | null {
   const key = id.toLowerCase();
+  // Stripe card checkout is only the Stripe gateway itself.
+  // Stripe PayPal, Affirm, Afterpay, Klarna, and Link stay off this path.
+  if (key.startsWith("stripe_") || key.startsWith("stripe-")) return null;
+  if (key === "stripe" || key === "woocommerce_payments") return "stripe";
   if (key.includes("klarna") || key.includes("affirm") || key.includes("link")) {
     return null;
   }
   if (key.includes("paypal") || key.includes("ppcp") || key === "ppec_paypal") {
     return "paypal";
   }
-  if (key.includes("afterpay") || key.includes("clearpay")) {
-    return "afterpay";
-  }
   if (
-    key === "stripe" ||
-    key === "woocommerce_payments" ||
-    key.startsWith("stripe")
+    key === "afterpay" ||
+    key === "clearpay" ||
+    key === "afterpay-clearpay" ||
+    key.includes("afterpay") ||
+    key.includes("clearpay")
   ) {
-    return "stripe";
+    return "afterpay";
   }
   return null;
 }
@@ -49,6 +53,7 @@ export async function getEnabledCheckoutMethods(): Promise<
       const kind = checkoutKindForGateway(gateway.id);
       if (!kind || found.has(kind)) continue;
       if (kind === "afterpay" && !isAfterpayConfigured()) continue;
+      if (kind === "paypal" && !isPayPalConfigured()) continue;
       found.set(kind, {
         kind,
         wooId: gateway.id,
@@ -60,6 +65,13 @@ export async function getEnabledCheckoutMethods(): Promise<
             : kind === "afterpay"
               ? "Afterpay"
               : "Card"),
+      });
+    }
+    if (isPayPalConfigured() && !found.has("paypal")) {
+      found.set("paypal", {
+        kind: "paypal",
+        wooId: "paypal",
+        title: "PayPal",
       });
     }
     if (isAfterpayConfigured() && !found.has("afterpay")) {
