@@ -9,6 +9,7 @@ import {
   getEnabledCheckoutMethods,
   getOrder,
   markOrderPaid,
+  setOrderCustomerNote,
 } from "@/lib/api";
 import { captureAfterpayPayment, createAfterpayCheckout } from "@/lib/afterpay";
 import { capturePayPalOrder, createPayPalOrder } from "@/lib/paypal";
@@ -190,6 +191,9 @@ export async function createCheckoutSessionAction(
     const order = await getOrder(existing.orderId);
     const orderOk =
       order.status !== "cancelled" && order.status !== "failed";
+    if (orderOk && details.customerNote?.trim()) {
+      await setOrderCustomerNote(existing.orderId, details.customerNote);
+    }
     if (mockPayment && orderOk && isMockPaymentIntentId(existing.paymentIntentId)) {
       return {
         orderId: existing.orderId,
@@ -223,6 +227,7 @@ export async function createCheckoutSessionAction(
     mockPayment,
     paymentMethod: selected?.wooId,
     paymentMethodTitle: selected?.title,
+    customerNote: details.customerNote,
   });
 
   if (mockPayment) {

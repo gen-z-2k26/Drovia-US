@@ -1,6 +1,7 @@
 "use client";
 
 import Lenis from "lenis";
+import { usePathname } from "next/navigation";
 import { useEffect, type ReactNode } from "react";
 import { useMotionEnabled } from "@/lib/use-motion-enabled";
 
@@ -14,9 +15,11 @@ function shouldPrevent(node: HTMLElement) {
 
 export function SmoothScroll({ children }: { children: ReactNode }) {
   const { enabled, prefersReducedMotion } = useMotionEnabled();
+  const pathname = usePathname();
+  const nativeScroll = pathname === "/checkout";
 
   useEffect(() => {
-    if (!enabled || prefersReducedMotion) return;
+    if (!enabled || prefersReducedMotion || nativeScroll) return;
 
     const lenis = new Lenis({
       autoRaf: true,
@@ -32,7 +35,7 @@ export function SmoothScroll({ children }: { children: ReactNode }) {
     return () => {
       lenis.destroy();
     };
-  }, [enabled, prefersReducedMotion]);
+  }, [enabled, nativeScroll, prefersReducedMotion]);
 
   return children;
 }

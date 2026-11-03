@@ -1,14 +1,9 @@
 import type { Metadata } from "next";
 import Script from "next/script";
 import { Fraunces, Varela_Round } from "next/font/google";
-import { Header } from "@/components/Header";
-import { Footer } from "@/components/Footer";
-import { CartDrawer } from "@/components/CartDrawer";
-import { CartHydrator } from "@/components/CartHydrator";
-import { Toaster } from "@/components/Toaster";
 import { JsonLd } from "@/components/JsonLd";
+import { SiteChrome } from "@/components/SiteChrome";
 import { StoreProvider } from "@/lib/store-context";
-import { SmoothScroll } from "@/components/SmoothScroll";
 import { ThemeModeProvider } from "@/lib/theme-mode";
 import { getSiteSettings, getSiteUrl } from "@/lib/api";
 import { getThemeStyle } from "@/lib/theme";
@@ -199,16 +194,7 @@ export default async function RootLayout({
         <JsonLd data={websiteLd} />
         <ThemeModeProvider defaultMode={settings.theme.defaultMode}>
           <StoreProvider settings={settings}>
-            <SmoothScroll>
-              <Header />
-              <main id="main-content" className="flex-1">
-                {children}
-              </main>
-              <Footer settings={settings} />
-              <CartHydrator />
-              <CartDrawer />
-              <Toaster />
-            </SmoothScroll>
+            <SiteChrome settings={settings}>{children}</SiteChrome>
           </StoreProvider>
         </ThemeModeProvider>
       </body>

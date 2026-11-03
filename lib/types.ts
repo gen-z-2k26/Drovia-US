@@ -427,6 +427,12 @@ export interface ShippingRate {
 export interface AppliedCoupon {
   code: string;
   discount: number;
+  discountType: string;
+}
+
+export interface CartTaxLine {
+  name: string;
+  amount: number;
 }
 
 export interface StoreCartItem {
@@ -455,6 +461,7 @@ export interface CartTotals {
 export interface StoreCart {
   items: StoreCartItem[];
   coupons: AppliedCoupon[];
+  taxLines: CartTaxLine[];
   totals: CartTotals;
   shippingAddress: Address;
   billingAddress: Address;

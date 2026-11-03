@@ -2,6 +2,7 @@ import { fromStoreAmount } from "@/lib/money";
 import type {
   Address,
   AppliedCoupon,
+  CartTaxLine,
   CartTotals,
   GuestOrder,
   ShippingRate,
@@ -43,12 +44,18 @@ export type RawStoreCart = {
     permalink?: string;
     quantity_limits?: { minimum?: number; maximum?: number };
     images?: Array<{ src?: string }>;
-    prices?: { price?: string; currency_minor_unit?: number };
+    prices?: {
+      price?: string;
+      regular_price?: string;
+      currency_minor_unit?: number;
+    };
   }>;
   coupons?: Array<{
     code?: string;
+    discount_type?: string;
     totals?: { total_discount?: string; currency_minor_unit?: number };
   }>;
+  tax_lines?: Array<{ name?: string; price?: string }>;
   totals?: MoneyBlock;
   shipping_address?: RawAddress;
   billing_address?: RawAddress;
@@ -151,6 +158,10 @@ function mapItems(raw: RawStoreCart): StoreCartItem[] {
       slug: slugFromPermalink(item.permalink),
       name: item.name || "Item",
       price: fromStoreAmount(item.prices?.price, minor),
+      regularPrice: fromStoreAmount(
+        item.prices?.regular_price || item.prices?.price,
+        minor,
+      ),
       image: item.images?.[0]?.src || "",
       quantity: Number(item.quantity) || 1,
       quantityMin: Number(item.quantity_limits?.minimum) || 1,
@@ -165,8 +176,19 @@ function mapCoupons(raw: RawStoreCart): AppliedCoupon[] {
     return {
       code: coupon.code || "",
       discount: fromStoreAmount(coupon.totals?.total_discount, minor),
+      discountType: coupon.discount_type || "",
     };
   }).filter((coupon) => coupon.code);
+}
+
+function mapTaxLines(raw: RawStoreCart): CartTaxLine[] {
+  const minor = raw.totals?.currency_minor_unit ?? 2;
+  return (raw.tax_lines ?? [])
+    .map((line) => ({
+      name: line.name || "Tax",
+      amount: fromStoreAmount(line.price, minor),
+    }))
+    .filter((line) => line.amount > 0 || line.name);
 }
 
 function mapRates(raw: RawStoreCart): ShippingRate[] {
@@ -211,6 +233,7 @@ export function emptyStoreCart(): StoreCart {
   const base = {
     items: [],
     coupons: [],
+    taxLines: [],
     totals: {
       subtotal: 0,
       discount: 0,
@@ -241,6 +264,7 @@ export function mapStoreCart(raw: RawStoreCart | null | undefined): StoreCart {
   const base = {
     items: mapItems(raw),
     coupons: mapCoupons(raw),
+    taxLines: mapTaxLines(raw),
     totals: mapTotals(raw.totals),
     shippingAddress: mapAddress(raw.shipping_address),
     billingAddress: mapAddress(raw.billing_address),
