@@ -121,6 +121,7 @@ export async function createPendingOrderFromCart(
     mockPayment?: boolean;
     paymentMethod?: string;
     paymentMethodTitle?: string;
+    customerNote?: string;
   },
 ): Promise<CreateOrderResult> {
   if (!cart.items.length) {
@@ -153,6 +154,7 @@ export async function createPendingOrderFromCart(
       payment_method_title: paymentMethodTitle,
       status: "pending",
       set_paid: false,
+      customer_note: options?.customerNote?.trim() || undefined,
       billing: toWooAddress(billing, true),
       shipping: toWooAddress(shipping, false),
       line_items: cart.items.map((item) => ({
@@ -190,6 +192,14 @@ export async function createPendingOrderFromCart(
     }
 
     return mapWooOrder(order, cart);
+  });
+}
+
+export async function setOrderCustomerNote(orderId: string, note: string) {
+  const trimmed = note.trim();
+  if (!trimmed) return;
+  await withWooErrorHandling(async () => {
+    await wooPut(`orders/${orderId}`, { customer_note: trimmed });
   });
 }
 

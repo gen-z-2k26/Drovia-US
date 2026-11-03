@@ -1,13 +1,25 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import {
+  Award,
+  ChevronDown,
+  ChevronLeft,
+  Gift,
+  Lock,
+  Minus,
+  Package,
+  Plus,
+  ShieldCheck,
+  Truck,
+} from "lucide-react";
 import { StoreImage } from "@/components/StoreImage";
+import { BrandLogo } from "@/components/BrandLogo";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { SelectField } from "@/components/SelectField";
 import { PaymentBrandIcon } from "@/components/PaymentBrandIcon";
 import { PaymentFormSkeleton, PaymentStep } from "@/components/PaymentStep";
 import { iconsForCheckoutMethods } from "@/lib/checkout-icons";
@@ -15,13 +27,16 @@ import { useCartStore } from "@/lib/cart-store";
 import { useStore } from "@/lib/store-context";
 import { formatPrice } from "@/lib/format";
 import { emptyAddress, emptyStoreCart } from "@/lib/api/map-cart";
-import { pageContainer } from "@/lib/layout";
 import {
   createCheckoutSessionAction,
   getCheckoutOptionsAction,
 } from "@/app/actions/checkout";
 import {
+  applyCouponAction,
+  removeCouponAction,
+  removeCartItemAction,
   selectShippingRateAction,
+  updateCartItemAction,
   updateCustomerAction,
 } from "@/app/actions/cart";
 import type {
@@ -36,8 +51,6 @@ import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast-store";
 import { userErrorMessage } from "@/lib/user-error";
 
-type Step = "details" | "payment";
-
 function addressFromCart(source: Address, fallbackCountry: string): Address {
   return {
     ...emptyAddress(),
@@ -46,12 +59,28 @@ function addressFromCart(source: Address, fallbackCountry: string): Address {
   };
 }
 
+function buildCustomerNote(isGift: boolean, note: string) {
+  const parts: string[] = [];
+  if (isGift) parts.push("Gift order: skip prices on the packing slip.");
+  if (note.trim()) parts.push(note.trim());
+  return parts.join("\n");
+}
+
+function addressReady(address: Address) {
+  return Boolean(
+    address.address1.trim() &&
+      address.city.trim() &&
+      address.postcode.trim() &&
+      address.country.trim(),
+  );
+}
+
 export function CheckoutPage() {
   const router = useRouter();
   const { settings } = useStore();
   const cart = useCartStore((state) => state.cart);
   const setCart = useCartStore((state) => state.setCart);
-  const [step, setStep] = useState<Step>("details");
+  const setOpen = useCartStore((state) => state.setOpen);
   const [shipping, setShipping] = useState<Address>(emptyAddress());
   const [billing, setBilling] = useState<Address>(emptyAddress());
   const [same, setSame] = useState(true);
@@ -65,6 +94,17 @@ export function CheckoutPage() {
     [],
   );
   const [paymentKind, setPaymentKind] = useState<CheckoutPaymentKind | "">("");
+  const [isGift, setIsGift] = useState(false);
+  const [sellerNote, setSellerNote] = useState("");
+  const [showNote, setShowNote] = useState(false);
+  const [showSummary, setShowSummary] = useState(false);
+  const syncKey = useRef("");
+  const shippingRef = useRef(shipping);
+  const billingRef = useRef(billing);
+  const sameRef = useRef(same);
+  shippingRef.current = shipping;
+  billingRef.current = billing;
+  sameRef.current = same;
 
   useEffect(() => {
     let cancelled = false;
@@ -102,13 +142,53 @@ export function CheckoutPage() {
     };
   }, [setCart]);
 
+  useEffect(() => {
+    if (session && session.cart.cartHash !== cart.cartHash) {
+      setSession(null);
+      setSessionError("");
+    }
+  }, [cart.cartHash, session]);
+
+  async function refreshRates(nextShipping = shippingRef.current) {
+    if (!addressReady(nextShipping)) return;
+    const currentBilling = billingRef.current;
+    const billingSame = sameRef.current;
+    const key = [
+      nextShipping.address1,
+      nextShipping.address2,
+      nextShipping.city,
+      nextShipping.state,
+      nextShipping.postcode,
+      nextShipping.country,
+    ].join("|");
+    if (key === syncKey.current) return;
+    syncKey.current = key;
+    const nextBilling = billingSame
+      ? {
+          ...nextShipping,
+          email: nextShipping.email || currentBilling.email,
+          phone: nextShipping.phone || currentBilling.phone,
+        }
+      : currentBilling;
+    try {
+      setCart(
+        await updateCustomerAction({
+          shipping: nextShipping,
+          billing: nextBilling,
+        }),
+      );
+    } catch {
+      syncKey.current = "";
+    }
+  }
+
   function validate() {
     const next: Record<string, string> = {};
     if (!shipping.firstName.trim()) next.firstName = "First name is required.";
     if (!shipping.lastName.trim()) next.lastName = "Last name is required.";
     if (!shipping.address1.trim()) next.address1 = "Street address is required.";
     if (!shipping.city.trim()) next.city = "City is required.";
-    if (!shipping.postcode.trim()) next.postcode = "Postcode is required.";
+    if (!shipping.postcode.trim()) next.postcode = "ZIP code is required.";
     if (!shipping.country.trim()) next.country = "Country is required.";
     const email = (same ? shipping.email : billing.email).trim();
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -134,12 +214,11 @@ export function CheckoutPage() {
     return next;
   }
 
-  async function continueToPayment() {
+  async function proceedToPayment() {
     if (!cart.items.length || !validate()) return;
     setSubmitting(true);
     setSessionError("");
     setSession(null);
-    setStep("payment");
     try {
       const nextCart = await syncAddress();
       if (
@@ -147,7 +226,6 @@ export function CheckoutPage() {
         !nextCart.shippingRates.some((rate) => rate.selected)
       ) {
         setErrors({ form: "Select a shipping method." });
-        setStep("details");
         setSubmitting(false);
         return;
       }
@@ -156,6 +234,7 @@ export function CheckoutPage() {
         billing: same ? { ...shipping, email: shipping.email } : billing,
         billingSameAsShipping: same,
         paymentKind: paymentKind || undefined,
+        customerNote: buildCustomerNote(isGift, sellerNote),
       });
       setCart(nextSession.cart);
       setSession(nextSession);
@@ -166,7 +245,6 @@ export function CheckoutPage() {
       );
       setSessionError(message);
       setErrors({ form: message });
-      setStep("details");
     } finally {
       setSubmitting(false);
     }
@@ -175,6 +253,7 @@ export function CheckoutPage() {
   async function chooseRate(packageId: number, rateId: string) {
     try {
       setCart(await selectShippingRateAction({ packageId, rateId }));
+      setSession(null);
     } catch (error) {
       setErrors({
         form: userErrorMessage(error, "Could not select shipping."),
@@ -193,55 +272,95 @@ export function CheckoutPage() {
     value: state.code,
     label: state.name,
   }));
+  const shippingReady = addressReady(shipping);
+  const showRates = cart.needsShipping && cart.shippingRates.length > 0;
 
   return (
-    <main className={pageContainer("py-10 sm:py-14")}>
-      <div className="mb-8 max-w-xl">
-        <p className="text-xs font-medium tracking-wide text-muted-foreground">
-          {step === "details"
-            ? "Step 1 of 2 · Delivery"
-            : "Step 2 of 2 · Payment"}
-        </p>
-        <h1 className="font-display mt-2 text-4xl sm:text-5xl">
-          {step === "payment" ? "Payment" : "Checkout"}
-        </h1>
-        <p className="mt-3 text-pretty text-muted-foreground">
-          {step === "payment"
-            ? mockPayment
-              ? "Confirm the order. No charge in local skip mode."
-              : `Pay with ${
-                  paymentMethods.find((method) => method.kind === session?.paymentKind)
-                    ?.title || "your selected method"
-                }.`
-            : "Enter your delivery details, then choose a payment method."}
-        </p>
-      </div>
+    <div className="min-h-full bg-[#f3f4f6]">
+      <div className="mx-auto grid w-full max-w-[1240px] items-start gap-x-16 px-6 py-8 lg:grid-cols-[minmax(0,1fr)_420px] lg:px-10 lg:py-12">
+      <div className="min-w-0">
+      <header>
+        <div className="relative flex w-full items-center justify-center">
+          <button
+            type="button"
+            className="absolute left-0 inline-flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
+            onClick={() => setOpen(true)}
+          >
+            <ChevronLeft className="size-4" aria-hidden />
+            Back to cart
+          </button>
+          <Link href="/" aria-label={settings.name}>
+            <BrandLogo heightClass="h-7 sm:h-8" />
+          </Link>
+        </div>
+      </header>
 
       {!cart.items.length ? (
-        <div className="rounded-2xl border border-dashed border-border px-6 py-14 text-center">
-          <p className="font-medium">Your cart is empty</p>
+        <div className="py-16 text-center">
+          <p className="font-display text-2xl">Your cart is empty</p>
           <p className="mt-2 text-sm text-muted-foreground">
             Add a product before checkout.
           </p>
           <Link
             href="/products"
-            className={cn(buttonVariants({ variant: "outline" }), "mt-5")}
+            className={cn(buttonVariants({ variant: "outline" }), "mt-6")}
           >
             Browse products
           </Link>
         </div>
       ) : (
-        <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,22rem)] lg:items-start">
-          <section className="min-w-0 rounded-2xl border border-border bg-card p-5 sm:p-8">
-            {step === "details" ? (
-              <form
-                className="min-w-0 space-y-6"
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  void continueToPayment();
-                }}
-              >
-                <div className="grid min-w-0 gap-x-4 gap-y-5 sm:grid-cols-2">
+        <>
+          <button
+            type="button"
+            className="mt-6 flex w-full items-center justify-between rounded-[8px] border border-[#e6e6ea] bg-white px-4 py-3 text-sm lg:hidden"
+            onClick={() => setShowSummary((open) => !open)}
+          >
+            <span className="flex items-center gap-2 font-medium">
+              {showSummary ? "Hide" : "Show"} order summary
+              <ChevronDown
+                className={cn(
+                  "size-4 transition-transform",
+                  showSummary && "rotate-180",
+                )}
+              />
+            </span>
+            <span className="tabular-nums font-medium">
+              {formatPrice(cart.totals.total, settings, cart.totals.currency)}
+            </span>
+          </button>
+          <div className={cn("mt-4 w-full lg:hidden", showSummary ? "block" : "hidden")}>
+            <div className="rounded-[8px] border border-[#e7e7eb] bg-white p-5 shadow-[0_1px_2px_rgba(16,16,16,0.04)]">
+              <OrderSummary cart={cart} />
+              <PromiseCard />
+            </div>
+          </div>
+
+          <section className="min-w-0 pb-16 pt-8">
+            <form
+              className="w-full space-y-10"
+              onSubmit={(event) => {
+                event.preventDefault();
+                void proceedToPayment();
+              }}
+            >
+              <section className="space-y-3">
+                <h2 className="text-[1.05rem] font-semibold tracking-tight">Contact</h2>
+                <Field
+                  id="email"
+                  label="Email"
+                  type="email"
+                  value={same ? shipping.email : billing.email}
+                  error={errors.email}
+                  onChange={(value) => {
+                    if (same) setShipping({ ...shipping, email: value });
+                    else setBilling({ ...billing, email: value });
+                  }}
+                />
+              </section>
+
+              <section className="space-y-3">
+                <h2 className="text-[1.05rem] font-semibold tracking-tight">Shipping address</h2>
+                <div className="grid min-w-0 gap-3 sm:grid-cols-2">
                   <Field
                     id="first-name"
                     label="First name"
@@ -261,17 +380,103 @@ export function CheckoutPage() {
                     }
                   />
                   <Field
-                    id="email"
-                    label="Email"
-                    type="email"
-                    value={same ? shipping.email : billing.email}
-                    error={errors.email}
-                    onChange={(value) => {
-                      if (same) setShipping({ ...shipping, email: value });
-                      else setBilling({ ...billing, email: value });
-                    }}
+                    className="sm:col-span-2"
+                    id="address1"
+                    label="Street address"
+                    value={shipping.address1}
+                    error={errors.address1}
+                    onChange={(value) =>
+                      setShipping({ ...shipping, address1: value })
+                    }
+                    onBlur={() => void refreshRates()}
                   />
                   <Field
+                    className="sm:col-span-2"
+                    id="address2"
+                    label="Apartment, suite, etc. (optional)"
+                    value={shipping.address2}
+                    onChange={(value) =>
+                      setShipping({ ...shipping, address2: value })
+                    }
+                    onBlur={() => void refreshRates()}
+                  />
+                  <div className="grid gap-3 sm:col-span-2 sm:grid-cols-3">
+                    <Field
+                      id="city"
+                      label="City"
+                      value={shipping.city}
+                      error={errors.city}
+                      onChange={(value) =>
+                        setShipping({ ...shipping, city: value })
+                      }
+                      onBlur={() => void refreshRates()}
+                    />
+                    {stateOptions.length ? (
+                      <CheckoutSelect
+                        id="state"
+                        label="State / Province"
+                        value={shipping.state}
+                        options={stateOptions}
+                        onChange={(value) => {
+                          const next = { ...shipping, state: value };
+                          setShipping(next);
+                          void refreshRates(next);
+                        }}
+                      />
+                    ) : (
+                      <Field
+                        id="state"
+                        label="State / Province"
+                        value={shipping.state}
+                        onChange={(value) =>
+                          setShipping({ ...shipping, state: value })
+                        }
+                        onBlur={() => void refreshRates()}
+                      />
+                    )}
+                    <Field
+                      id="postcode"
+                      label="ZIP code"
+                      value={shipping.postcode}
+                      error={errors.postcode}
+                      onChange={(value) =>
+                        setShipping({ ...shipping, postcode: value })
+                      }
+                      onBlur={() => void refreshRates()}
+                    />
+                  </div>
+                  {countryOptions.length ? (
+                    <CheckoutSelect
+                      className="sm:col-span-2"
+                      id="country"
+                      label="Select country / region"
+                      value={shipping.country}
+                      options={countryOptions}
+                      onChange={(value) => {
+                        const next = {
+                          ...shipping,
+                          country: value,
+                          state: "",
+                        };
+                        setShipping(next);
+                        void refreshRates(next);
+                      }}
+                    />
+                  ) : (
+                    <Field
+                      className="sm:col-span-2"
+                      id="country"
+                      label="Select country / region"
+                      value={shipping.country}
+                      error={errors.country}
+                      onChange={(value) =>
+                        setShipping({ ...shipping, country: value })
+                      }
+                      onBlur={() => void refreshRates()}
+                    />
+                  )}
+                  <Field
+                    className="sm:col-span-2"
                     id="phone"
                     label="Phone"
                     value={shipping.phone}
@@ -279,98 +484,80 @@ export function CheckoutPage() {
                       setShipping({ ...shipping, phone: value })
                     }
                   />
-                  <Field
-                    className="sm:col-span-2"
-                    id="address1"
-                    label="Address"
-                    value={shipping.address1}
-                    error={errors.address1}
-                    onChange={(value) =>
-                      setShipping({ ...shipping, address1: value })
-                    }
-                  />
-                  <Field
-                    id="city"
-                    label="City"
-                    value={shipping.city}
-                    error={errors.city}
-                    onChange={(value) =>
-                      setShipping({ ...shipping, city: value })
-                    }
-                  />
-                  <Field
-                    id="postcode"
-                    label="Postcode"
-                    value={shipping.postcode}
-                    error={errors.postcode}
-                    onChange={(value) =>
-                      setShipping({ ...shipping, postcode: value })
-                    }
-                  />
-                  {countryOptions.length ? (
-                    <SelectField
-                      id="country"
-                      label="Country"
-                      value={shipping.country}
-                      options={countryOptions}
-                      onChange={(value) =>
-                        setShipping({ ...shipping, country: value, state: "" })
-                      }
-                    />
-                  ) : (
-                    <Field
-                      id="country"
-                      label="Country"
-                      value={shipping.country}
-                      error={errors.country}
-                      onChange={(value) =>
-                        setShipping({ ...shipping, country: value })
-                      }
-                    />
-                  )}
-                  {stateOptions.length ? (
-                    <SelectField
-                      id="state"
-                      label="State"
-                      value={shipping.state}
-                      options={stateOptions}
-                      onChange={(value) =>
-                        setShipping({ ...shipping, state: value })
-                      }
-                    />
-                  ) : (
-                    <Field
-                      id="state"
-                      label="State / region"
-                      value={shipping.state}
-                      onChange={(value) =>
-                        setShipping({ ...shipping, state: value })
-                      }
-                    />
-                  )}
                 </div>
-
-                <label className="flex min-w-0 items-start gap-2 text-sm leading-snug">
+                <label className="flex items-center gap-2.5 pt-1 text-sm">
                   <input
                     type="checkbox"
+                    className="size-4 rounded border-input accent-primary"
+                    checked={isGift}
+                    onChange={(event) => setIsGift(event.target.checked)}
+                  />
+                  <span className="flex items-center gap-1.5 text-muted-foreground">
+                    <Gift className="size-3.5 text-primary" aria-hidden />
+                    This is a gift - we will skip prices on the packing slip
+                  </span>
+                </label>
+                {showNote ? (
+                  <Field
+                    id="seller-note"
+                    label="Note for the seller"
+                    value={sellerNote}
+                    onChange={setSellerNote}
+                  />
+                ) : (
+                  <button
+                    type="button"
+                    className="text-sm text-foreground/70 underline-offset-4 hover:text-foreground hover:underline"
+                    onClick={() => setShowNote(true)}
+                  >
+                    + Add a note for the seller
+                  </button>
+                )}
+                <label className="flex items-center gap-2.5 text-sm text-muted-foreground">
+                  <input
+                    type="checkbox"
+                    className="size-4 rounded border-input accent-primary"
                     checked={same}
                     onChange={(event) => setSame(event.target.checked)}
                   />
                   Billing address is the same as shipping
                 </label>
+              </section>
 
-                {cart.needsShipping && cart.shippingRates.length > 0 ? (
-                  <fieldset className="space-y-2">
-                    <legend className="text-sm font-medium">Shipping</legend>
-                    {cart.shippingRates.map((rate) => (
+              <section className="space-y-3">
+                <h2 className="text-[1.05rem] font-semibold tracking-tight">Shipping method</h2>
+                {!shippingReady ? (
+                  <p className="rounded-[8px] bg-[#eceef2] px-4 py-5 text-center text-sm text-muted-foreground">
+                    Enter your address to see shipping options.
+                  </p>
+                ) : showRates ? (
+                  <div className="overflow-hidden rounded-[8px] border border-[#e6e6ea] bg-white">
+                    {cart.shippingRates.map((rate, index) => (
                       <label
                         key={`${rate.packageId}-${rate.rateId}`}
-                        className="flex items-center justify-between gap-3 rounded-xl border border-border px-3 py-2 text-sm"
+                        className={cn(
+                          "flex items-center justify-between gap-3 px-4 py-3.5 text-sm",
+                          index > 0 && "border-t border-border/70",
+                          rate.selected && "bg-primary/10",
+                        )}
                       >
-                        <span className="flex items-center gap-2">
+                        <span className="flex items-center gap-3">
+                          <span
+                            className={cn(
+                              "flex size-4 items-center justify-center rounded-full border-2",
+                              rate.selected
+                                ? "border-primary"
+                                : "border-foreground/25",
+                            )}
+                          >
+                            {rate.selected ? (
+                              <span className="size-2 rounded-full bg-primary" />
+                            ) : null}
+                          </span>
                           <input
                             type="radio"
                             name="shipping-rate"
+                            className="sr-only"
                             checked={rate.selected}
                             onChange={() =>
                               void chooseRate(rate.packageId, rate.rateId)
@@ -378,60 +565,49 @@ export function CheckoutPage() {
                           />
                           {rate.name}
                         </span>
-                        <span className="tabular-nums">
-                          {formatPrice(
-                            rate.price,
-                            settings,
-                            cart.totals.currency,
+                        <span
+                          className={cn(
+                            "tabular-nums",
+                            rate.price <= 0 && "font-medium text-primary",
                           )}
+                        >
+                          {rate.price <= 0
+                            ? "FREE"
+                            : formatPrice(
+                                rate.price,
+                                settings,
+                                cart.totals.currency,
+                              )}
                         </span>
                       </label>
                     ))}
-                  </fieldset>
-                ) : null}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    No shipping methods are available for this address yet.
+                  </p>
+                )}
+              </section>
 
+              <section className="space-y-3">
+                <div>
+                  <h2 className="text-[1.05rem] font-semibold tracking-tight">Payment</h2>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    All transactions are secure and encrypted.
+                  </p>
+                </div>
                 <PaymentMethodPicker
                   methods={paymentMethods}
                   value={paymentKind}
-                  onChange={setPaymentKind}
-                />
-
-                {errors.form ? (
-                  <p className="text-sm text-destructive">{errors.form}</p>
-                ) : null}
-
-                <Button
-                  type="submit"
-                  size="lg"
-                  className="w-full"
-                  disabled={
-                    !cart.items.length || submitting || (!mockPayment && !paymentKind)
-                  }
-                >
-                  {submitting
-                    ? mockPayment
-                      ? "Preparing order..."
-                      : "Preparing payment..."
-                    : mockPayment
-                      ? "Continue (dev, no charge)"
-                      : "Continue to payment"}
-                </Button>
-              </form>
-            ) : (
-              <div className="space-y-5">
-                <PaymentMethodPicker
-                  methods={paymentMethods.filter(
-                    (method) => method.kind === (session?.paymentKind || paymentKind),
-                  )}
-                  value={session?.paymentKind || paymentKind}
-                  readOnly
+                  onChange={(kind) => {
+                    setPaymentKind(kind);
+                    setSession(null);
+                  }}
                 />
                 {sessionError && !session ? (
                   <p className="text-sm text-destructive">{sessionError}</p>
                 ) : null}
-                {!session ? (
-                  <PaymentFormSkeleton />
-                ) : (
+                {session ? (
                   <PaymentStep
                     amount={session.amount}
                     currency={session.currency}
@@ -472,41 +648,56 @@ export function CheckoutPage() {
                       });
                     }}
                   />
-                )}
-                {errors.form && session ? (
-                  <p className="rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm font-medium text-destructive" role="alert">
-                    {errors.form}
-                  </p>
+                ) : submitting ? (
+                  <PaymentFormSkeleton />
                 ) : null}
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="w-full"
-                  onClick={() => {
-                    setSession(null);
-                    setSessionError("");
-                    setStep("details");
-                  }}
-                  disabled={submitting}
-                >
-                  Back to details
-                </Button>
-              </div>
-            )}
-          </section>
+              </section>
 
-          <aside className="lg:sticky lg:top-24">
-            <CartTotalsSummary cart={cart} />
-          </aside>
-        </div>
+              {errors.form ? (
+                <p className="text-sm text-destructive" role="alert">
+                  {errors.form}
+                </p>
+              ) : null}
+
+              {!session ? (
+                <Button
+                  type="submit"
+                  size="lg"
+                  className="h-[52px] w-full rounded-[8px] text-sm font-medium tracking-[0.08em] uppercase"
+                  disabled={
+                    !cart.items.length ||
+                    submitting ||
+                    (!mockPayment && !paymentKind)
+                  }
+                >
+                  <Lock className="size-4" aria-hidden />
+                  {submitting ? "Preparing payment..." : "Proceed to payment"}
+                </Button>
+              ) : null}
+            </form>
+          </section>
+        </>
       )}
-    </main>
+      </div>
+
+      {cart.items.length ? (
+        <aside className="hidden self-start lg:block">
+          <div className="rounded-[8px] border border-[#e6e6ea] bg-white p-6 shadow-none">
+            <OrderSummary cart={cart} />
+            <PromiseCard />
+          </div>
+        </aside>
+      ) : null}
+      </div>
+    </div>
   );
 }
 
 function methodNote(kind: CheckoutPaymentKind) {
   if (kind === "paypal") return "Approve the payment in PayPal.";
-  if (kind === "afterpay") return "Finish on Afterpay, then return here.";
+  if (kind === "afterpay") {
+    return "You will be redirected to Afterpay to set up your interest-free installments, then brought back to confirm your order.";
+  }
   return "Card details stay with Stripe.";
 }
 
@@ -524,14 +715,14 @@ function PaymentMethodPicker({
   const { settings } = useStore();
   if (!methods.length) {
     return (
-      <p className="rounded-2xl border border-foreground/15 bg-muted px-4 py-4 text-sm font-medium text-foreground">
+      <p className="rounded-[8px] border border-foreground/15 bg-muted px-4 py-4 text-sm font-medium text-foreground">
         No payment methods are turned on for this store.
       </p>
     );
   }
   return (
-    <fieldset className="space-y-3">
-      <legend className="text-sm font-semibold text-foreground">Pay with</legend>
+    <fieldset className="space-y-2">
+      <legend className="sr-only">Pay with</legend>
       <div className="grid gap-2">
         {methods.map((method) => {
           const selected = value === method.kind;
@@ -543,10 +734,10 @@ function PaymentMethodPicker({
             <label
               key={method.kind}
               className={cn(
-                "flex items-center gap-3 rounded-2xl border px-4 py-3",
+                "flex items-center gap-3 rounded-[8px] border bg-white px-4 py-3.5",
                 selected
-                  ? "border-foreground bg-card ring-2 ring-foreground"
-                  : "border-foreground/15 bg-card",
+                  ? "border-primary bg-[#f4fafd]"
+                  : "border-[#e6e6ea]",
                 readOnly ? "" : "cursor-pointer",
               )}
             >
@@ -560,25 +751,25 @@ function PaymentMethodPicker({
               />
               <span
                 className={cn(
-                  "flex size-5 shrink-0 items-center justify-center rounded-full border-2",
-                  selected ? "border-foreground" : "border-foreground/35",
+                  "flex size-4 shrink-0 items-center justify-center rounded-full border-2",
+                  selected ? "border-primary" : "border-foreground/35",
                 )}
                 aria-hidden
               >
                 {selected ? (
-                  <span className="size-2.5 rounded-full bg-foreground" />
+                  <span className="size-2 rounded-full bg-primary" />
                 ) : null}
               </span>
               <span className="min-w-0 flex-1">
                 <span className="block text-sm font-semibold text-foreground">
                   {method.title}
                 </span>
-                <span className="block text-xs text-foreground/70">
+                <span className="mt-0.5 block text-xs leading-relaxed text-muted-foreground">
                   {methodNote(method.kind)}
                 </span>
               </span>
               <span className="flex shrink-0 flex-wrap justify-end gap-1">
-                {icons.slice(0, 3).map((icon) => (
+                {icons.slice(0, 4).map((icon) => (
                   <PaymentBrandIcon
                     key={icon.slug}
                     slug={icon.slug}
@@ -594,6 +785,9 @@ function PaymentMethodPicker({
   );
 }
 
+const fieldShell =
+  "h-[52px] w-full rounded-[8px] border border-[#e4e4e8] bg-white px-4 text-sm shadow-none placeholder:text-[#9ca3af] focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20";
+
 function Field({
   id,
   label,
@@ -602,6 +796,7 @@ function Field({
   error,
   type = "text",
   className,
+  onBlur,
 }: {
   id: string;
   label: string;
@@ -610,38 +805,197 @@ function Field({
   error?: string;
   type?: string;
   className?: string;
+  onBlur?: () => void;
 }) {
   return (
-    <div className={cn("min-w-0 space-y-2", className)}>
-      <Label htmlFor={id}>{label}</Label>
+    <div className={cn("min-w-0 space-y-1", className)}>
+      <Label htmlFor={id} className="sr-only">
+        {label}
+      </Label>
       <Input
         id={id}
         type={type}
         value={value}
+        placeholder={label}
         onChange={(event) => onChange(event.target.value)}
+        onBlur={onBlur}
         aria-invalid={Boolean(error)}
+        className={fieldShell}
       />
       {error ? <p className="text-xs text-destructive">{error}</p> : null}
     </div>
   );
 }
 
-function CartTotalsSummary({ cart }: { cart: StoreCart }) {
-  const { settings } = useStore();
+function CheckoutSelect({
+  id,
+  label,
+  value,
+  onChange,
+  options,
+  className,
+}: {
+  id: string;
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  options: { value: string; label: string }[];
+  className?: string;
+}) {
   return (
-    <div className="space-y-4 rounded-2xl border border-border bg-muted/30 p-4 sm:p-5">
-      <h2 className="font-display text-xl">Order summary</h2>
-      <ul className="max-h-64 space-y-3 overflow-y-auto pr-1">
+    <div className={cn("relative min-w-0", className)}>
+      <Label htmlFor={id} className="sr-only">
+        {label}
+      </Label>
+      <select
+        id={id}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className={cn(fieldShell, "appearance-none pr-10 outline-none")}
+      >
+        <option value="">{label}</option>
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+      <ChevronDown
+        aria-hidden
+        className="pointer-events-none absolute top-1/2 right-3.5 size-4 -translate-y-1/2 text-muted-foreground"
+      />
+    </div>
+  );
+}
+
+function OrderSummary({ cart }: { cart: StoreCart }) {
+  const { settings } = useStore();
+  const setCart = useCartStore((state) => state.setCart);
+  const [coupon, setCoupon] = useState("");
+  const [couponBusy, setCouponBusy] = useState(false);
+  const [showCoupon, setShowCoupon] = useState(false);
+  const [qtyBusy, setQtyBusy] = useState("");
+  const shippingFree = cart.hasCalculatedShipping && cart.totals.shipping <= 0;
+  const taxReady = cart.hasCalculatedShipping;
+
+  async function applyCoupon() {
+    if (!coupon.trim()) return;
+    setCouponBusy(true);
+    try {
+      const next = await applyCouponAction(coupon);
+      setCart(next);
+      toast({ title: "Coupon applied", description: coupon.trim() });
+      setCoupon("");
+    } catch (error) {
+      toast({
+        title: "Coupon could not be applied",
+        description: userErrorMessage(error, "Coupon could not be applied."),
+        variant: "error",
+      });
+    } finally {
+      setCouponBusy(false);
+    }
+  }
+
+  async function removeCoupon(code: string) {
+    setCouponBusy(true);
+    try {
+      setCart(await removeCouponAction(code));
+      toast({ title: "Coupon removed", description: code });
+    } catch (error) {
+      toast({
+        title: "Coupon could not be removed",
+        description: userErrorMessage(error, "Coupon could not be removed."),
+        variant: "error",
+      });
+    } finally {
+      setCouponBusy(false);
+    }
+  }
+
+  async function changeQty(key: string, quantity: number) {
+    setQtyBusy(key);
+    try {
+      setCart(await updateCartItemAction({ key, quantity }));
+    } catch (error) {
+      toast({
+        title: "Could not update quantity",
+        description: userErrorMessage(error, "Could not update quantity."),
+        variant: "error",
+      });
+    } finally {
+      setQtyBusy("");
+    }
+  }
+
+  async function removeItem(key: string, name: string) {
+    setQtyBusy(key);
+    try {
+      setCart(await removeCartItemAction(key));
+      toast({ title: "Removed from cart", description: name });
+    } catch (error) {
+      toast({
+        title: "Could not remove item",
+        description: userErrorMessage(error, "Could not remove item."),
+        variant: "error",
+      });
+    } finally {
+      setQtyBusy("");
+    }
+  }
+
+  return (
+    <div>
+      <div className="flex items-center justify-between">
+        <h2 className="text-[1.05rem] font-semibold tracking-tight">Order summary</h2>
+        <span className="text-sm text-muted-foreground">
+          {cart.itemsCount} {cart.itemsCount === 1 ? "item" : "items"}
+        </span>
+      </div>
+      {shippingFree ? (
+        <p className="mt-4 inline-flex items-center gap-1 rounded-full bg-[#e7f8ee] px-2 py-0.5 text-[11px] font-semibold tracking-wide text-[#178a45]">
+          Free shipping
+        </p>
+      ) : null}
+      <ul className="mt-5 space-y-4">
         {cart.items.map((item) => (
-          <li key={item.key} className="flex items-center gap-3">
-            <div className="relative size-12 shrink-0 overflow-hidden rounded-xl bg-background">
-              <StoreImage src={item.image} alt="" sizes="48px" />
+          <li key={item.key} className="flex items-start gap-3">
+            <div className="relative size-14 shrink-0 overflow-hidden rounded-[6px] bg-[#f3f4f6]">
+              <StoreImage src={item.image} alt="" sizes="56px" />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium">{item.name}</p>
-              <p className="text-xs text-muted-foreground tabular-nums">
-                Qty {item.quantity}
-              </p>
+              <p className="text-sm font-medium leading-snug">{item.name}</p>
+              <div className="mt-1 flex items-center gap-2 text-xs text-[#6b7280]">
+                <button
+                  type="button"
+                  className="px-0.5 disabled:opacity-40"
+                  disabled={qtyBusy === item.key || item.quantity <= item.quantityMin}
+                  onClick={() => void changeQty(item.key, item.quantity - 1)}
+                  aria-label={`Decrease quantity for ${item.name}`}
+                >
+                  <Minus className="size-3" />
+                </button>
+                <span className="min-w-4 text-center tabular-nums text-foreground">
+                  {item.quantity}
+                </span>
+                <button
+                  type="button"
+                  className="px-0.5 disabled:opacity-40"
+                  disabled={qtyBusy === item.key || item.quantity >= item.quantityMax}
+                  onClick={() => void changeQty(item.key, item.quantity + 1)}
+                  aria-label={`Increase quantity for ${item.name}`}
+                >
+                  <Plus className="size-3" />
+                </button>
+                <button
+                  type="button"
+                  className="ml-1 hover:text-foreground hover:underline"
+                  disabled={qtyBusy === item.key}
+                  onClick={() => void removeItem(item.key, item.name)}
+                >
+                  Remove
+                </button>
+              </div>
             </div>
             <span className="shrink-0 text-sm font-medium tabular-nums">
               {formatPrice(
@@ -653,17 +1007,62 @@ function CartTotalsSummary({ cart }: { cart: StoreCart }) {
           </li>
         ))}
       </ul>
-      <div className="space-y-1 border-t border-border pt-3 text-sm">
+      <div className="mt-5 space-y-2">
+        {showCoupon || cart.coupons.length ? (
+          <div className="flex gap-2">
+            <Input
+              value={coupon}
+              onChange={(event) => setCoupon(event.target.value)}
+              placeholder="Discount code"
+              aria-label="Discount code"
+              className={cn(fieldShell, "h-10")}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              className="h-10 rounded-[8px]"
+              disabled={couponBusy || !coupon.trim()}
+              onClick={() => void applyCoupon()}
+            >
+              Apply
+            </Button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            className="text-sm font-medium text-foreground/80 hover:underline"
+            onClick={() => setShowCoupon(true)}
+          >
+            Have a discount code?
+          </button>
+        )}
+        {cart.coupons.map((entry) => (
+          <div
+            key={entry.code}
+            className="flex items-center justify-between text-sm"
+          >
+            <span className="text-muted-foreground">{entry.code}</span>
+            <button
+              type="button"
+              className="text-xs underline"
+              onClick={() => void removeCoupon(entry.code)}
+            >
+              Remove
+            </button>
+          </div>
+        ))}
+      </div>
+      <div className="mt-5 space-y-2.5 text-sm">
         <div className="flex justify-between">
-          <span>Subtotal</span>
+          <span className="text-muted-foreground">Subtotal</span>
           <span className="tabular-nums">
             {formatPrice(cart.totals.subtotal, settings, cart.totals.currency)}
           </span>
         </div>
         {cart.totals.discount > 0 ? (
           <div className="flex justify-between">
-            <span>Discount</span>
-            <span className="tabular-nums">
+            <span className="text-muted-foreground">Item savings</span>
+            <span className="tabular-nums font-medium text-[#e11d48]">
               -
               {formatPrice(
                 cart.totals.discount,
@@ -674,26 +1073,87 @@ function CartTotalsSummary({ cart }: { cart: StoreCart }) {
           </div>
         ) : null}
         <div className="flex justify-between">
-          <span>Shipping</span>
-          <span className="tabular-nums">
-            {formatPrice(cart.totals.shipping, settings, cart.totals.currency)}
+          <span className="text-muted-foreground">Shipping</span>
+          <span
+            className={cn(
+              "tabular-nums",
+              shippingFree && "font-semibold text-[#e11d48]",
+            )}
+          >
+            {!cart.hasCalculatedShipping
+              ? "Enter address"
+              : shippingFree
+                ? "FREE"
+                : formatPrice(
+                    cart.totals.shipping,
+                    settings,
+                    cart.totals.currency,
+                  )}
           </span>
         </div>
-        {cart.totals.tax > 0 ? (
-          <div className="flex justify-between">
-            <span>Tax</span>
-            <span className="tabular-nums">
-              {formatPrice(cart.totals.tax, settings, cart.totals.currency)}
-            </span>
-          </div>
-        ) : null}
-        <div className="flex justify-between pt-1 font-medium">
+        <div className="flex justify-between">
+          <span className="text-muted-foreground">Tax</span>
+          <span className="tabular-nums text-muted-foreground">
+            {taxReady && cart.totals.tax > 0
+              ? formatPrice(cart.totals.tax, settings, cart.totals.currency)
+              : "Calculated at next step"}
+          </span>
+        </div>
+        <div className="flex justify-between pt-1 text-base font-semibold">
           <span>Total</span>
           <span className="tabular-nums">
             {formatPrice(cart.totals.total, settings, cart.totals.currency)}
           </span>
         </div>
       </div>
+    </div>
+  );
+}
+
+function PromiseCard() {
+  const items = [
+    {
+      icon: ShieldCheck,
+      title: "Satisfaction guarantee",
+      body: "Returns are reviewed within the published return window.",
+    },
+    {
+      icon: Truck,
+      title: "Free shipping",
+      body: "Free standard shipping on eligible U.S. orders, with no minimum.",
+    },
+    {
+      icon: Award,
+      title: "Warranty and support",
+      body: "Tested products, with support if something is not right.",
+    },
+    {
+      icon: Package,
+      title: "Secure checkout",
+      body: "Payments are encrypted. Card details stay with the processor.",
+    },
+  ];
+  return (
+    <div className="mt-6 border-t border-[#ececef] pt-5">
+      <h3 className="text-[1.05rem] font-semibold tracking-tight">The Orvexo promise</h3>
+      <p className="mt-1 text-xs text-muted-foreground">
+        Every order, every time.
+      </p>
+      <ul className="mt-4 space-y-3.5">
+        {items.map((item) => (
+          <li key={item.title} className="flex gap-3">
+            <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full bg-[#fde8ee] text-[#e11d48]">
+              <item.icon className="size-4" aria-hidden />
+            </span>
+            <span>
+              <span className="block text-sm font-medium">{item.title}</span>
+              <span className="mt-0.5 block text-xs leading-relaxed text-muted-foreground">
+                {item.body}
+              </span>
+            </span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

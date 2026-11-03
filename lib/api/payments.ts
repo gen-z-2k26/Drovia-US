@@ -1,4 +1,5 @@
 import { isWooConfigured, isWooUnreachable, wooGet } from "@/lib/api/client";
+import { isAfterpayConfigured } from "@/lib/afterpay";
 import type { CheckoutPaymentKind, CheckoutPaymentMethod } from "@/lib/types";
 
 type WooGateway = {
@@ -58,6 +59,13 @@ export async function getEnabledCheckoutMethods(): Promise<
             : kind === "afterpay"
               ? "Afterpay"
               : "Card"),
+      });
+    }
+    if (isAfterpayConfigured() && !found.has("afterpay")) {
+      found.set("afterpay", {
+        kind: "afterpay",
+        wooId: "afterpay",
+        title: "Afterpay",
       });
     }
     return KIND_ORDER.map((kind) => found.get(kind)).filter(
