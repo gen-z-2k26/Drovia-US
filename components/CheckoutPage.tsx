@@ -8,9 +8,11 @@ import {
   ChevronDown,
   ChevronLeft,
   Gift,
+  Loader2,
   Lock,
   Minus,
   Package,
+  ShoppingBag,
   Plus,
   ShieldCheck,
   Truck,
@@ -21,7 +23,11 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PaymentBrandIcon } from "@/components/PaymentBrandIcon";
-import { PaymentFormSkeleton, PaymentStep } from "@/components/PaymentStep";
+import {
+  AfterpayPayment,
+  PaymentFormSkeleton,
+  PaymentStep,
+} from "@/components/PaymentStep";
 import { iconsForCheckoutMethods } from "@/lib/checkout-icons";
 import { useCartStore } from "@/lib/cart-store";
 import { useStore } from "@/lib/store-context";
@@ -303,20 +309,30 @@ export function CheckoutPage() {
         </div>
       </header>
       <div className="mx-auto grid w-full max-w-[1240px] items-start gap-x-10 px-6 py-8 lg:grid-cols-[minmax(0,1fr)_400px] lg:px-10 lg:py-10">
-      <div className="min-w-0">
+      <div className={cn("min-w-0", !cart.items.length && "lg:col-span-2")}>
 
       {!cart.items.length ? (
-        <div className="mx-auto max-w-md py-20 text-center">
-          <p className="font-display text-2xl">Your cart is empty</p>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Add a product before checkout.
-          </p>
-          <Link
-            href="/products"
-            className={cn(buttonVariants({ variant: "outline" }), "mt-6")}
-          >
-            Browse products
-          </Link>
+        <div className="flex min-h-[62vh] items-center justify-center">
+          <div className="w-full max-w-[440px] rounded-[8px] border border-border bg-card px-8 py-12 text-center shadow-sm">
+            <span className="mx-auto flex size-14 items-center justify-center rounded-full bg-muted text-foreground">
+              <ShoppingBag className="size-6" aria-hidden />
+            </span>
+            <h1 className="font-display mt-6 text-[28px] leading-tight tracking-tight">
+              Your cart is empty
+            </h1>
+            <p className="mx-auto mt-3 max-w-[32ch] text-sm leading-relaxed text-muted-foreground">
+              Add something you like, then come back here to check out.
+            </p>
+            <Link
+              href="/products"
+              className={cn(
+                buttonVariants({ size: "lg" }),
+                "mt-8 h-[52px] w-full rounded-[8px] text-sm font-medium tracking-[0.08em] uppercase",
+              )}
+            >
+              Browse products
+            </Link>
+          </div>
         </div>
       ) : (
         <>
@@ -617,7 +633,7 @@ export function CheckoutPage() {
                 {sessionError && !session ? (
                   <p className="text-sm text-destructive">{sessionError}</p>
                 ) : null}
-                {session ? (
+                {session && paymentKind !== "afterpay" ? (
                   <PaymentStep
                     amount={session.amount}
                     currency={session.currency}
@@ -658,7 +674,7 @@ export function CheckoutPage() {
                       });
                     }}
                   />
-                ) : submitting ? (
+                ) : submitting && paymentKind !== "afterpay" ? (
                   <PaymentFormSkeleton />
                 ) : null}
               </section>
@@ -669,7 +685,41 @@ export function CheckoutPage() {
                 </p>
               ) : null}
 
-              {!session ? (
+              {paymentKind === "afterpay" ? (
+                <>
+                  <Button
+                    type={session?.redirectUrl ? "button" : "submit"}
+                    size="lg"
+                    className="h-[52px] w-full rounded-[8px] text-sm font-medium tracking-[0.08em] uppercase"
+                    disabled={submitting || !cart.items.length}
+                    onClick={
+                      session?.redirectUrl
+                        ? () => {
+                            window.location.assign(session.redirectUrl!);
+                          }
+                        : undefined
+                    }
+                  >
+                    {submitting ? (
+                      <Loader2 className="size-4 animate-spin" aria-hidden />
+                    ) : (
+                      <Lock className="size-4" aria-hidden />
+                    )}
+                    {session?.redirectUrl
+                      ? "Continue to Afterpay"
+                      : "Proceed to payment"}
+                  </Button>
+                  {submitting ? <PaymentFormSkeleton /> : null}
+                  {session ? (
+                    <AfterpayPayment
+                      amount={session.amount}
+                      currency={session.currency}
+                      redirectUrl={session.redirectUrl}
+                      showAction={false}
+                    />
+                  ) : null}
+                </>
+              ) : !session ? (
                 <Button
                   type="submit"
                   size="lg"
@@ -680,7 +730,11 @@ export function CheckoutPage() {
                     (!mockPayment && !paymentKind)
                   }
                 >
-                  <Lock className="size-4" aria-hidden />
+                  {submitting ? (
+                    <Loader2 className="size-4 animate-spin" aria-hidden />
+                  ) : (
+                    <Lock className="size-4" aria-hidden />
+                  )}
                   {submitting ? "Preparing payment..." : "Proceed to payment"}
                 </Button>
               ) : null}

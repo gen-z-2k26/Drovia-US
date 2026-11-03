@@ -327,11 +327,14 @@ function PayPalPayment({
   );
 }
 
-function AfterpayPayment({
+export function AfterpayPayment({
   amount,
   currency,
   redirectUrl,
-}: Pick<PaymentStepProps, "amount" | "currency" | "redirectUrl">) {
+  showAction = true,
+}: Pick<PaymentStepProps, "amount" | "currency" | "redirectUrl"> & {
+  showAction?: boolean;
+}) {
   const { settings } = useStore();
   if (!redirectUrl) {
     return <Unavailable>Afterpay is not available right now.</Unavailable>;
@@ -342,16 +345,18 @@ function AfterpayPayment({
         You will complete {formatPrice(amount, settings, currency)} on Afterpay,
         then return here to confirm the order.
       </p>
-      <Button
-        type="button"
-        size="lg"
-        className="w-full"
-        onClick={() => {
-          window.location.assign(redirectUrl);
-        }}
-      >
-        Continue to Afterpay
-      </Button>
+      {showAction ? (
+        <Button
+          type="button"
+          size="lg"
+          className="w-full"
+          onClick={() => {
+            window.location.assign(redirectUrl);
+          }}
+        >
+          Continue to Afterpay
+        </Button>
+      ) : null}
       <SecureNote>
         Afterpay collects the installment details. This store never sees them.
       </SecureNote>
