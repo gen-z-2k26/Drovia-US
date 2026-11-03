@@ -39,7 +39,8 @@ export function CartHydrator() {
           : await getCartAction();
         if (cancelled) return;
         setCart(cart);
-        if (legacy.length) window.localStorage.removeItem("cart");
+        window.localStorage.removeItem("cart");
+        window.localStorage.removeItem("woo-cart");
       } catch (error) {
         if (!cancelled) {
           setError(

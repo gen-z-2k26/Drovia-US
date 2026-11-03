@@ -135,9 +135,9 @@ export function mapWooProduct(product: WooProduct): Product {
       : images.map(() => product.name);
 
   return {
-    id: String(product.id),
-    slug: product.slug,
-    name: product.name,
+    id: String(product.id ?? ""),
+    slug: String(product.slug || ""),
+    name: String(product.name || "Product"),
     price,
     regularPrice,
     salePrice: onSale ? saleRaw : null,
