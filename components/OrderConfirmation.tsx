@@ -17,6 +17,7 @@ import { StoreImage } from "@/components/StoreImage";
 import type { Address, GuestOrder } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast-store";
+import { userErrorMessage } from "@/lib/user-error";
 
 function formatAddress(address: Address) {
   const name = [address.firstName, address.lastName].filter(Boolean).join(" ");
@@ -148,9 +149,12 @@ export function OrderConfirmation({
         }
       } catch (err) {
         if (!cancelled) {
-          const message = err instanceof Error ? err.message : "Order not found.";
-          setError(message);
-          toast({ title: "Could not load order", description: message, variant: "error" });
+          setError(
+            userErrorMessage(
+              err,
+              "Could not load this order. Check the link in your email and try again.",
+            ),
+          );
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -173,11 +177,10 @@ export function OrderConfirmation({
           email: lookupEmail,
         }),
       );
-      toast({ title: "Order found", description: `Order ${orderId}` });
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Order not found.";
-      setError(message);
-      toast({ title: "Order not found", description: message, variant: "error" });
+      setError(
+        userErrorMessage(err, "Order not found. Check the order key and email."),
+      );
     } finally {
       setLoading(false);
     }

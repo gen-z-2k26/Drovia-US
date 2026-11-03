@@ -22,7 +22,7 @@ function isInternalHref(href: string) {
 function Linked({ href, children }: { href: string; children: ReactNode }) {
   if (isInternalHref(href)) {
     return (
-      <Link href={href} className="underline decoration-muted-foreground/60 underline-offset-[3px] hover:text-primary">
+      <Link href={href} className="font-medium underline decoration-current/50 underline-offset-[3px] hover:decoration-current">
         {children}
       </Link>
     );
@@ -30,7 +30,7 @@ function Linked({ href, children }: { href: string; children: ReactNode }) {
   return (
     <a
       href={href}
-      className="underline decoration-muted-foreground/60 underline-offset-[3px] hover:text-primary"
+      className="font-medium underline decoration-current/50 underline-offset-[3px] hover:decoration-current"
     >
       {children}
     </a>
@@ -80,21 +80,27 @@ function displayTitle(title: string) {
 export function BlockView({
   block,
   contactStyle = "card",
+  tone = "soft",
 }: {
   block: CareBlock;
   contactStyle?: "card" | "grid" | "panel";
+  tone?: "soft" | "strong";
 }) {
+  const body =
+    tone === "strong"
+      ? "text-foreground"
+      : "text-muted-foreground";
   switch (block.type) {
     case "paragraph":
       if (block.text.startsWith("Important:")) {
         return (
-          <div className="my-4 border-l-2 border-primary bg-muted/60 px-5 py-4 text-[13px] leading-relaxed text-muted-foreground">
+          <div className={`my-4 border-l-2 border-foreground bg-muted px-5 py-4 text-[13px] leading-relaxed ${body}`}>
             <RichText text={block.text} />
           </div>
         );
       }
       return (
-        <p className="mb-3.5 text-[15px] leading-[1.75] text-muted-foreground">
+        <p className={`mb-3.5 text-[15px] leading-[1.75] ${body}`}>
           <RichText text={block.text} />
         </p>
       );
@@ -112,7 +118,7 @@ export function BlockView({
       );
     case "bullets":
       return (
-        <ul className="mb-3.5 list-disc space-y-1.5 pl-[22px] text-[15px] leading-[1.75] text-muted-foreground">
+        <ul className={`mb-3.5 list-disc space-y-1.5 pl-[22px] text-[15px] leading-[1.75] ${body}`}>
           {block.items.map((item) => (
             <li key={item}>
               <RichText text={item} />
@@ -122,7 +128,7 @@ export function BlockView({
       );
     case "numbered":
       return (
-        <ol className="mb-3.5 list-decimal space-y-1.5 pl-[22px] text-[15px] leading-[1.75] text-muted-foreground">
+        <ol className={`mb-3.5 list-decimal space-y-1.5 pl-[22px] text-[15px] leading-[1.75] ${body}`}>
           {block.items.map((item) => (
             <li key={item}>
               <RichText text={item} />
@@ -136,7 +142,7 @@ export function BlockView({
           <h3 className="font-display mb-2 text-[21px] font-normal tracking-tight">
             {block.question}
           </h3>
-          <p className="text-[15px] leading-[1.75] text-muted-foreground">
+          <p className={`text-[15px] leading-[1.75] ${body}`}>
             <RichText text={block.answer} />
           </p>
         </div>

@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { StoreImage } from "@/components/StoreImage";
 import type { GuestOrder } from "@/lib/types";
-import { toast } from "@/lib/toast-store";
+import { userErrorMessage } from "@/lib/user-error";
 
 function statusLabel(order: GuestOrder) {
   if (order.paid) return "Paid";
@@ -49,7 +49,12 @@ export function TrackOrderForm({
       })
       .catch((err: unknown) => {
         if (cancelled) return;
-        setError(err instanceof Error ? err.message : "Order not found.");
+        setError(
+          userErrorMessage(
+            err,
+            "Order not found. Check the order number, order key, and email.",
+          ),
+        );
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -71,18 +76,13 @@ export function TrackOrderForm({
         email,
       });
       setOrder(found);
-      toast({
-        title: "Order found",
-        description: `Order ${found.orderId} is ${found.status || "on file"}.`,
-      });
     } catch (err) {
-      const raw = err instanceof Error ? err.message : "";
-      const message =
-        !raw || raw.includes("Minified React error")
-          ? "Order not found. Check the order number, order key, and email."
-          : raw;
-      setError(message);
-      toast({ title: "Order not found", description: message, variant: "error" });
+      setError(
+        userErrorMessage(
+          err,
+          "Order not found. Check the order number, order key, and email.",
+        ),
+      );
     } finally {
       setLoading(false);
     }

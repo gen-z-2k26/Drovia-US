@@ -34,6 +34,7 @@ import type {
 } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast-store";
+import { userErrorMessage } from "@/lib/user-error";
 
 type Step = "details" | "payment";
 
@@ -146,10 +147,6 @@ export function CheckoutPage() {
         !nextCart.shippingRates.some((rate) => rate.selected)
       ) {
         setErrors({ form: "Select a shipping method." });
-        toast({
-          title: "Select a shipping method",
-          variant: "error",
-        });
         setStep("details");
         setSubmitting(false);
         return;
@@ -163,16 +160,13 @@ export function CheckoutPage() {
       setCart(nextSession.cart);
       setSession(nextSession);
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Could not start checkout.";
+      const message = userErrorMessage(
+        error,
+        "Could not start checkout. Check your details and try again.",
+      );
       setSessionError(message);
       setErrors({ form: message });
       setStep("details");
-      toast({
-        title: "Could not start checkout",
-        description: message,
-        variant: "error",
-      });
     } finally {
       setSubmitting(false);
     }
@@ -182,13 +176,8 @@ export function CheckoutPage() {
     try {
       setCart(await selectShippingRateAction({ packageId, rateId }));
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Could not select shipping.";
-      setErrors({ form: message });
-      toast({
-        title: "Could not select shipping",
-        description: message,
-        variant: "error",
+      setErrors({
+        form: userErrorMessage(error, "Could not select shipping."),
       });
     }
   }
@@ -475,17 +464,19 @@ export function CheckoutPage() {
                       );
                     }}
                     onError={(message) => {
-                      setErrors({ form: message });
-                      toast({
-                        title: "Payment could not be completed",
-                        description: message,
-                        variant: "error",
+                      setErrors({
+                        form: userErrorMessage(
+                          new Error(message),
+                          "Payment could not be completed. Try again.",
+                        ),
                       });
                     }}
                   />
                 )}
                 {errors.form && session ? (
-                  <p className="text-sm text-destructive">{errors.form}</p>
+                  <p className="rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm font-medium text-destructive" role="alert">
+                    {errors.form}
+                  </p>
                 ) : null}
                 <Button
                   type="button"
