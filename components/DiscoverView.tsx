@@ -8,6 +8,7 @@ import {
 } from "@/components/CustomerCarePage";
 import type { CareBlock, CarePage, CareSection } from "@/lib/customer-care";
 import type { StoreSettings } from "@/lib/types";
+import { pageContainer } from "@/lib/layout";
 import { cn } from "@/lib/utils";
 
 function copyrightFrom(page: CarePage) {
@@ -80,25 +81,53 @@ export function DiscoverAbout({
   settings: StoreSettings;
 }) {
   return (
-    <CustomerCareShell
-      settings={settings}
-      title={page.tagline || page.title}
-      eyebrow="About Us"
-      intro={page.intro.map((paragraph) => (
-        <p key={paragraph.slice(0, 40)}>
-          <RichText text={paragraph} />
-        </p>
-      ))}
-    >
-      {page.sections.map((section) => (
-        <SectionBody
-          key={section.id}
-          section={section}
-          contactStyle="grid"
-        />
-      ))}
-      <FooterNote page={page} />
-    </CustomerCareShell>
+    <div className="pb-16">
+      <section className="bg-foreground text-background">
+        <div className={pageContainer("py-14 sm:py-20")}>
+          <p className="text-xs font-semibold tracking-[0.22em] text-background/70 uppercase">
+            About {settings.name}
+          </p>
+          <h1 className="mt-4 max-w-4xl font-display text-4xl leading-[1.05] text-background sm:text-6xl">
+            {page.tagline || page.title}
+          </h1>
+          <div className="mt-6 max-w-2xl space-y-4 text-base leading-7 text-background/90">
+            {page.intro.map((paragraph) => (
+              <p key={paragraph.slice(0, 48)}>
+                <RichText text={paragraph} />
+              </p>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <div className={pageContainer("space-y-5 pt-8 sm:pt-10")}>
+        {page.sections.map((section, index) => (
+          <section
+            key={section.id}
+            id={section.id}
+            className="scroll-mt-24 rounded-2xl border border-foreground/15 bg-card p-6 sm:p-8"
+          >
+            <span className="flex size-9 items-center justify-center rounded-full bg-foreground text-sm font-semibold text-background">
+              {String(index + 1).padStart(2, "0")}
+            </span>
+            <h2 className="mt-4 font-display text-3xl text-foreground">
+              {section.title}
+            </h2>
+            <div className="mt-4">
+              {withoutCopyright(section.blocks).map((block, blockIndex) => (
+                <BlockView
+                  key={`${section.id}-${blockIndex}`}
+                  block={block}
+                  contactStyle="grid"
+                  tone="strong"
+                />
+              ))}
+            </div>
+          </section>
+        ))}
+        <FooterNote page={page} />
+      </div>
+    </div>
   );
 }
 

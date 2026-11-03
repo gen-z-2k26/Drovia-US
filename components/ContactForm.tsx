@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/lib/toast-store";
+import { userErrorMessage } from "@/lib/user-error";
 import { cn } from "@/lib/utils";
 
 const fieldClass =
@@ -13,12 +14,14 @@ const fieldClass =
 
 export function ContactForm() {
   const [sending, setSending] = useState(false);
+  const [error, setError] = useState("");
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = event.currentTarget;
     const data = new FormData(form);
     setSending(true);
+    setError("");
     try {
       const result = await submitContactAction({
         name: String(data.get("name") || ""),
@@ -36,9 +39,7 @@ export function ContactForm() {
           : "We sent your note to the store.",
       });
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Could not send your message.";
-      toast({ title: "Message not sent", description: message, variant: "error" });
+      setError(userErrorMessage(error, "Could not send your message. Try again."));
     } finally {
       setSending(false);
     }
@@ -89,6 +90,11 @@ export function ContactForm() {
           className={cn(fieldClass, "h-auto min-h-36 py-3")}
         />
       </div>
+      {error ? (
+        <p className="rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm font-medium text-destructive" role="alert">
+          {error}
+        </p>
+      ) : null}
       <Button type="submit" size="lg" className="w-full sm:w-auto" disabled={sending}>
         {sending ? "Sending..." : "Send Message"}
       </Button>
