@@ -276,27 +276,37 @@ export function CheckoutPage() {
   const showRates = cart.needsShipping && cart.shippingRates.length > 0;
 
   return (
-    <div className="min-h-full bg-background">
-      <div className="mx-auto grid w-full max-w-[1240px] items-start gap-x-16 px-6 py-8 lg:grid-cols-[minmax(0,1fr)_420px] lg:px-10 lg:py-12">
-      <div className="min-w-0">
-      <header>
-        <div className="relative flex w-full items-center justify-center">
-          <button
-            type="button"
-            className="absolute left-0 inline-flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
-            onClick={() => setOpen(true)}
-          >
-            <ChevronLeft className="size-4" aria-hidden />
-            Back to cart
-          </button>
+    <div className="min-h-full bg-muted/40">
+      <header className="border-b border-border bg-background">
+        <div className="relative mx-auto flex h-16 w-full max-w-[1240px] items-center justify-center px-6 lg:px-10">
+          {cart.items.length ? (
+            <button
+              type="button"
+              className="absolute left-6 inline-flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground lg:left-10"
+              onClick={() => setOpen(true)}
+            >
+              <ChevronLeft className="size-4" aria-hidden />
+              Back to cart
+            </button>
+          ) : (
+            <Link
+              href="/products"
+              className="absolute left-6 inline-flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground lg:left-10"
+            >
+              <ChevronLeft className="size-4" aria-hidden />
+              Back to products
+            </Link>
+          )}
           <Link href="/" aria-label={settings.name}>
             <BrandLogo heightClass="h-7 sm:h-8" />
           </Link>
         </div>
       </header>
+      <div className="mx-auto grid w-full max-w-[1240px] items-start gap-x-10 px-6 py-8 lg:grid-cols-[minmax(0,1fr)_400px] lg:px-10 lg:py-10">
+      <div className="min-w-0">
 
       {!cart.items.length ? (
-        <div className="py-16 text-center">
+        <div className="mx-auto max-w-md py-20 text-center">
           <p className="font-display text-2xl">Your cart is empty</p>
           <p className="mt-2 text-sm text-muted-foreground">
             Add a product before checkout.
@@ -337,14 +347,14 @@ export function CheckoutPage() {
 
           <section className="min-w-0 pb-16 pt-8">
             <form
-              className="w-full space-y-10"
+              className="mx-auto w-full max-w-[560px] space-y-9 lg:mx-0"
               onSubmit={(event) => {
                 event.preventDefault();
                 void proceedToPayment();
               }}
             >
               <section className="space-y-3">
-                <h2 className="text-[1.05rem] font-semibold tracking-tight">Contact</h2>
+                <h2 className="text-base font-semibold">Contact</h2>
                 <Field
                   id="email"
                   label="Email"
@@ -359,7 +369,7 @@ export function CheckoutPage() {
               </section>
 
               <section className="space-y-3">
-                <h2 className="text-[1.05rem] font-semibold tracking-tight">Shipping address</h2>
+                <h2 className="text-base font-semibold">Shipping address</h2>
                 <div className="grid min-w-0 gap-3 sm:grid-cols-2">
                   <Field
                     id="first-name"
@@ -525,7 +535,7 @@ export function CheckoutPage() {
               </section>
 
               <section className="space-y-3">
-                <h2 className="text-[1.05rem] font-semibold tracking-tight">Shipping method</h2>
+                <h2 className="text-base font-semibold">Shipping method</h2>
                 {!shippingReady ? (
                   <p className="rounded-[8px] bg-muted px-4 py-5 text-center text-sm text-muted-foreground">
                     Enter your address to see shipping options.
@@ -591,7 +601,7 @@ export function CheckoutPage() {
 
               <section className="space-y-3">
                 <div>
-                  <h2 className="text-[1.05rem] font-semibold tracking-tight">Payment</h2>
+                  <h2 className="text-base font-semibold">Payment</h2>
                   <p className="mt-1 text-sm text-muted-foreground">
                     All transactions are secure and encrypted.
                   </p>
@@ -682,7 +692,7 @@ export function CheckoutPage() {
 
       {cart.items.length ? (
         <aside className="hidden self-start lg:block">
-          <div className="rounded-[8px] border border-border bg-card p-6">
+          <div className="rounded-[8px] border border-border bg-card p-6 shadow-sm">
             <OrderSummary cart={cart} />
             <PromiseCard />
           </div>
@@ -947,7 +957,7 @@ function OrderSummary({ cart }: { cart: StoreCart }) {
   return (
     <div>
       <div className="flex items-center justify-between">
-        <h2 className="text-[1.05rem] font-semibold tracking-tight">Order summary</h2>
+        <h2 className="text-base font-semibold">Order summary</h2>
         <span className="text-sm text-muted-foreground">
           {cart.itemsCount} {cart.itemsCount === 1 ? "item" : "items"}
         </span>
@@ -1052,7 +1062,7 @@ function OrderSummary({ cart }: { cart: StoreCart }) {
           </div>
         ))}
       </div>
-      <div className="mt-5 space-y-2.5 text-sm">
+      <div className="mt-5 space-y-2.5 border-t border-border pt-4 text-sm">
         <div className="flex justify-between">
           <span className="text-muted-foreground">Subtotal</span>
           <span className="tabular-nums">
@@ -1135,7 +1145,7 @@ function PromiseCard() {
   ];
   return (
     <div className="mt-6 border-t border-border pt-5">
-      <h3 className="text-[1.05rem] font-semibold tracking-tight">The Orvexo promise</h3>
+      <h3 className="text-base font-semibold">The Orvexo promise</h3>
       <p className="mt-1 text-xs text-muted-foreground">
         Every order, every time.
       </p>

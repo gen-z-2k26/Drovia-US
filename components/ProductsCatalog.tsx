@@ -27,7 +27,7 @@ export function ProductsCatalog({
       Array.from(
         new Set(
           products
-            .map((product) => product.category)
+            .map((product) => product.category || "")
             .filter((name) => name.trim().length > 0),
         ),
       ).sort(),

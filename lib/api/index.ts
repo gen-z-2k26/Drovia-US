@@ -721,7 +721,9 @@ function stripeCardBrands(settings: StoreSettings): PaymentIconSlug[] {
     "diners",
     "unionpay",
   ]);
-  return settings.productPage.stripeCardBrands.filter((slug) => allowed.has(slug));
+  return (settings.productPage?.stripeCardBrands ?? []).filter((slug) =>
+    allowed.has(slug),
+  );
 }
 
 function classifyGateway(id: string) {
