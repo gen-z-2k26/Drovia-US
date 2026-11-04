@@ -77,6 +77,9 @@ export async function generateMetadata(): Promise<Metadata> {
         index: true,
         follow: true,
       },
+      verification: {
+        google: "K5OpExPL0GS0pV-imCaeizrzBsuArNxq6HnJatROH_I",
+      },
       alternates: {
         canonical: "/",
       },
