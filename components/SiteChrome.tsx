@@ -18,6 +18,16 @@ export function SiteChrome({
 }) {
   const pathname = usePathname();
   const focusedCheckout = pathname === "/checkout";
+  const admin = pathname.startsWith("/admin");
+
+  if (admin) {
+    return (
+      <>
+        <div className="flex min-h-full flex-1 flex-col">{children}</div>
+        <Toaster />
+      </>
+    );
+  }
 
   return (
     <SmoothScroll>

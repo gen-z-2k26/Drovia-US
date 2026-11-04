@@ -1,34 +1,38 @@
+import { getPaymentAccounts } from "@/lib/payment-config";
+
 const SANDBOX = "https://api-m.sandbox.paypal.com";
 const LIVE = "https://api-m.paypal.com";
 
-function paypalBase() {
-  return process.env.PAYPAL_ENV?.trim().toLowerCase() === "live" ? LIVE : SANDBOX;
+async function paypalAccount() {
+  const accounts = await getPaymentAccounts();
+  return accounts.paypal;
 }
 
-export function isPayPalConfigured() {
-  return Boolean(
-    process.env.PAYPAL_CLIENT_ID?.trim() &&
-      process.env.PAYPAL_CLIENT_SECRET?.trim(),
-  );
+function paypalBase(mode: "sandbox" | "live") {
+  return mode === "live" ? LIVE : SANDBOX;
 }
 
-export function payPalClientId() {
-  return (
-    process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID?.trim() ||
-    process.env.PAYPAL_CLIENT_ID?.trim() ||
-    ""
-  );
+export async function isPayPalConfigured() {
+  const account = await paypalAccount();
+  return Boolean(account.clientId && account.clientSecret);
 }
 
-async function paypalToken() {
-  const id = process.env.PAYPAL_CLIENT_ID?.trim() || "";
-  const secret = process.env.PAYPAL_CLIENT_SECRET?.trim() || "";
-  if (!id || !secret) {
-    throw new Error(
-      "PayPal is not configured. Set PAYPAL_CLIENT_ID and PAYPAL_CLIENT_SECRET.",
-    );
-  }
-  const response = await fetch(`${paypalBase()}/v1/oauth2/token`, {
+export async function payPalClientId() {
+  const account = await paypalAccount();
+  return account.clientId;
+}
+
+async function paypalToken(override?: {
+  mode?: "sandbox" | "live";
+  clientId?: string;
+  clientSecret?: string;
+}) {
+  const account = await paypalAccount();
+  const mode = override?.mode || account.mode;
+  const id = override?.clientId?.trim() || account.clientId;
+  const secret = override?.clientSecret?.trim() || account.clientSecret;
+  if (!id || !secret) throw new Error("Add the keys first.");
+  const response = await fetch(`${paypalBase(mode)}/v1/oauth2/token`, {
     method: "POST",
     headers: {
       Authorization: `Basic ${Buffer.from(`${id}:${secret}`).toString("base64")}`,
@@ -43,13 +47,22 @@ async function paypalToken() {
   return data.access_token;
 }
 
+export async function pingPayPal(override?: {
+  mode?: "sandbox" | "live";
+  clientId?: string;
+  clientSecret?: string;
+}) {
+  await paypalToken(override);
+}
+
 export async function createPayPalOrder(input: {
   orderId: string;
   amount: number;
   currency: string;
 }) {
+  const account = await paypalAccount();
   const token = await paypalToken();
-  const response = await fetch(`${paypalBase()}/v2/checkout/orders`, {
+  const response = await fetch(`${paypalBase(account.mode)}/v2/checkout/orders`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -77,9 +90,10 @@ export async function createPayPalOrder(input: {
 }
 
 export async function capturePayPalOrder(paypalOrderId: string) {
+  const account = await paypalAccount();
   const token = await paypalToken();
   const response = await fetch(
-    `${paypalBase()}/v2/checkout/orders/${encodeURIComponent(paypalOrderId)}/capture`,
+    `${paypalBase(account.mode)}/v2/checkout/orders/${encodeURIComponent(paypalOrderId)}/capture`,
     {
       method: "POST",
       headers: {

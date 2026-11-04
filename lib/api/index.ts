@@ -22,7 +22,7 @@ import {
 import { getLivePromo } from "@/lib/api/promo";
 import { fetchWpFooterColumns } from "@/lib/api/wp-menus";
 import { googleFontStylesheetUrl } from "@/lib/fonts";
-import { checkoutKindForGateway, isWooGatewayEnabled } from "@/lib/api/payments";
+import { getPaymentAccounts } from "@/lib/payment-config";
 import type {
   Category,
   CountryOption,
@@ -547,13 +547,6 @@ type WooReview = {
   status?: string;
 };
 
-type WooGateway = {
-  id?: string;
-  enabled?: boolean | string;
-  title?: string;
-  method_title?: string;
-};
-
 function headerNumber(
   headers: Record<string, unknown>,
   name: string,
@@ -663,20 +656,6 @@ export async function getReviewCatalogStats(): Promise<ReviewCatalogStats> {
   };
 }
 
-const GATEWAY_ICON_MAP: Record<string, PaymentIconSlug[]> = {
-  paypal: ["paypal"],
-  ppec_paypal: ["paypal"],
-  "ppcp-gateway": ["paypal"],
-  "woocommerce-paypal-payments": ["paypal"],
-  affirm: ["affirm"],
-  afterpay: ["afterpay"],
-  "afterpay-clearpay": ["afterpay"],
-  klarna: ["klarna"],
-  stripe_klarna: ["klarna"],
-  link: ["link"],
-  stripe_link: ["link"],
-};
-
 const ICON_LABELS: Record<PaymentIconSlug, string> = {
   visa: "Visa",
   mastercard: "Mastercard",
@@ -726,44 +705,25 @@ function stripeCardBrands(settings: StoreSettings): PaymentIconSlug[] {
   );
 }
 
-function classifyGateway(id: string) {
-  const key = id.toLowerCase();
-  const checkoutKind = checkoutKindForGateway(id);
-  return {
-    stripe: checkoutKind === "stripe",
-    paypal: checkoutKind === "paypal",
-    affirm: /affirm/.test(key) && !key.startsWith("stripe_"),
-    afterpay: checkoutKind === "afterpay",
-  };
-}
-
 export async function getProductPaymentDisplay(
   settings: StoreSettings,
 ): Promise<ProductPaymentDisplay> {
   const slugs = new Set<PaymentIconSlug>();
-  let stripeEnabled = false;
-  let paypalEnabled = false;
-  let affirmEnabled = false;
-  let afterpayEnabled = false;
-
-  if (isWooConfigured() && !isWooUnreachable()) {
-    const gateways = await cachedSoftWooCall(
-      "payment-gateways",
-      () => wooGet<WooGateway[]>("payment_gateways"),
-      [] as WooGateway[],
-      "payment_gateways",
-    );
-    for (const gateway of gateways) {
-      if (!isWooGatewayEnabled(gateway.enabled) || !gateway.id) continue;
-      const kind = classifyGateway(gateway.id);
-      if (kind.stripe) stripeEnabled = true;
-      if (kind.paypal) paypalEnabled = true;
-      if (kind.affirm) affirmEnabled = true;
-      if (kind.afterpay) afterpayEnabled = true;
-      const mapped = GATEWAY_ICON_MAP[gateway.id] ?? [];
-      for (const slug of mapped) slugs.add(slug);
-    }
-  }
+  const accounts = await getPaymentAccounts();
+  const stripeEnabled = Boolean(
+    accounts.stripe.enabled &&
+      accounts.stripe.secretKey &&
+      accounts.stripe.publishableKey,
+  );
+  const paypalEnabled = Boolean(
+    accounts.paypal.enabled && accounts.paypal.clientId && accounts.paypal.clientSecret,
+  );
+  const affirmEnabled = Boolean(
+    accounts.affirm.enabled && accounts.affirm.publicKey && accounts.affirm.privateKey,
+  );
+  const afterpayEnabled = Boolean(
+    accounts.afterpay.enabled && accounts.afterpay.merchantId && accounts.afterpay.secret,
+  );
 
   if (stripeEnabled) {
     for (const slug of stripeCardBrands(settings)) slugs.add(slug);

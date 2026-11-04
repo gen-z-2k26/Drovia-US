@@ -1,27 +1,28 @@
+import { getPaymentAccounts } from "@/lib/payment-config";
 import type { Address } from "@/lib/types";
 
 const SANDBOX = "https://global-api-sandbox.afterpay.com";
 const LIVE = "https://global-api.afterpay.com";
 
-function afterpayBase() {
-  return process.env.AFTERPAY_ENV?.trim().toLowerCase() === "live" ? LIVE : SANDBOX;
+async function afterpayAccount() {
+  const accounts = await getPaymentAccounts();
+  return accounts.afterpay;
 }
 
-export function isAfterpayConfigured() {
-  return Boolean(
-    process.env.AFTERPAY_MERCHANT_ID?.trim() &&
-      process.env.AFTERPAY_SECRET?.trim(),
-  );
+function afterpayBase(mode: "sandbox" | "live") {
+  return mode === "live" ? LIVE : SANDBOX;
 }
 
-function authHeader() {
-  const id = process.env.AFTERPAY_MERCHANT_ID?.trim() || "";
-  const secret = process.env.AFTERPAY_SECRET?.trim() || "";
-  if (!id || !secret) {
-    throw new Error(
-      "Afterpay is not configured. Set AFTERPAY_MERCHANT_ID and AFTERPAY_SECRET.",
-    );
-  }
+export async function isAfterpayConfigured() {
+  const account = await afterpayAccount();
+  return Boolean(account.merchantId && account.secret);
+}
+
+async function authHeader(creds?: { merchantId: string; secret: string }) {
+  const account = creds ?? (await afterpayAccount());
+  const id = account.merchantId;
+  const secret = account.secret;
+  if (!id || !secret) throw new Error("Add the keys first.");
   return `Basic ${Buffer.from(`${id}:${secret}`).toString("base64")}`;
 }
 
@@ -43,22 +44,28 @@ function afterpayAddress(address: Address) {
   };
 }
 
-function userAgent() {
-  const id = process.env.AFTERPAY_MERCHANT_ID?.trim() || "unknown";
+async function userAgent(merchantId?: string) {
+  const id = merchantId || (await afterpayAccount()).merchantId || "unknown";
   const site = process.env.NEXT_PUBLIC_SITE_URL?.trim() || "https://orvexo.us";
   return `EcomBuilder/1.0.0 (Next.js/16; Merchant/${id}) ${site}`;
 }
 
-async function afterpayFetch<T>(path: string, body: unknown): Promise<T> {
-  const response = await fetch(`${afterpayBase()}${path}`, {
-    method: "POST",
+async function afterpayFetch<T>(
+  path: string,
+  body?: unknown,
+  method = "POST",
+  creds?: { mode: "sandbox" | "live"; merchantId: string; secret: string },
+): Promise<T> {
+  const account = creds ?? (await afterpayAccount());
+  const response = await fetch(`${afterpayBase(account.mode)}${path}`, {
+    method,
     headers: {
-      Authorization: authHeader(),
+      Authorization: await authHeader(creds),
       "Content-Type": "application/json",
       Accept: "application/json",
-      "User-Agent": userAgent(),
+      "User-Agent": await userAgent(account.merchantId),
     },
-    body: JSON.stringify(body),
+    body: body === undefined ? undefined : JSON.stringify(body),
   });
   const raw = await response.text();
   let data: (T & { message?: string; errorCode?: string }) | null = null;
@@ -74,6 +81,21 @@ async function afterpayFetch<T>(path: string, body: unknown): Promise<T> {
   }
   if (!data) throw new Error("Afterpay returned an empty response.");
   return data;
+}
+
+export async function pingAfterpay(override?: {
+  mode?: "sandbox" | "live";
+  merchantId?: string;
+  secret?: string;
+}) {
+  const account = await afterpayAccount();
+  const creds = {
+    mode: override?.mode || account.mode,
+    merchantId: override?.merchantId?.trim() || account.merchantId,
+    secret: override?.secret?.trim() || account.secret,
+  };
+  if (!creds.merchantId || !creds.secret) throw new Error("Add the keys first.");
+  await afterpayFetch<unknown>("/v2/configuration", undefined, "GET", creds);
 }
 
 export async function createAfterpayCheckout(input: {

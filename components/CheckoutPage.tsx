@@ -100,6 +100,10 @@ export function CheckoutPage() {
     [],
   );
   const [paymentKind, setPaymentKind] = useState<CheckoutPaymentKind | "">("");
+  const [stripePublishableKey, setStripePublishableKey] = useState("");
+  const [paypalClientId, setPaypalClientId] = useState("");
+  const [affirmPublicKey, setAffirmPublicKey] = useState("");
+  const [affirmEnv, setAffirmEnv] = useState<"sandbox" | "live">("sandbox");
   const [isGift, setIsGift] = useState(false);
   const [sellerNote, setSellerNote] = useState("");
   const [showNote, setShowNote] = useState(false);
@@ -121,6 +125,10 @@ export function CheckoutPage() {
         setCountries(options.countries);
         setMockPayment(options.mockPayment);
         setPaymentMethods(options.paymentMethods);
+        setStripePublishableKey(options.stripePublishableKey);
+        setPaypalClientId(options.paypalClientId);
+        setAffirmPublicKey(options.affirmPublicKey);
+        setAffirmEnv(options.affirmEnv);
         setPaymentKind((current) =>
           options.paymentMethods.some((method) => method.kind === current)
             ? current
@@ -654,6 +662,10 @@ export function CheckoutPage() {
                     mockPayment={session.mockPayment}
                     paymentKind={session.paymentKind}
                     redirectUrl={session.redirectUrl}
+                    stripePublishableKey={stripePublishableKey}
+                    paypalClientId={paypalClientId}
+                    affirmPublicKey={affirmPublicKey}
+                    affirmEnv={affirmEnv}
                     onPaid={(result) => {
                       setCart(emptyStoreCart());
                       toast({
@@ -759,6 +771,9 @@ export function CheckoutPage() {
 
 function methodNote(kind: CheckoutPaymentKind) {
   if (kind === "paypal") return "Approve the payment in PayPal.";
+  if (kind === "affirm") {
+    return "You will confirm an installment plan with Affirm, then return here to finish the order.";
+  }
   if (kind === "afterpay") {
     return "You will be redirected to Afterpay to set up your interest-free installments, then brought back to confirm your order.";
   }

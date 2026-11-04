@@ -13,7 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { completeCheckoutAction } from "@/app/actions/checkout";
 import { formatPrice } from "@/lib/format";
 import { useStore } from "@/lib/store-context";
-import { getStripeJs, getStripePublishableKey } from "@/lib/stripe-browser";
+import { getStripeJs } from "@/lib/stripe-browser";
 import { stripeBillingDetails } from "@/lib/stripe-address";
 import type {
   Address,
@@ -33,6 +33,10 @@ export type PaymentStepProps = {
   mockPayment?: boolean;
   paymentKind?: CheckoutPaymentKind | "mock";
   redirectUrl?: string;
+  stripePublishableKey?: string;
+  paypalClientId?: string;
+  affirmPublicKey?: string;
+  affirmEnv?: "sandbox" | "live";
   onPaid: (order: CreateOrderResult) => void;
   onError: (message: string) => void;
 };
@@ -229,17 +233,25 @@ function PayPalPayment({
   orderId,
   orderKey,
   clientSecret,
+  paypalClientId,
   onPaid,
   onError,
 }: Pick<
   PaymentStepProps,
-  "amount" | "currency" | "orderId" | "orderKey" | "clientSecret" | "onPaid" | "onError"
->) {
+  | "amount"
+  | "currency"
+  | "orderId"
+  | "orderKey"
+  | "clientSecret"
+  | "paypalClientId"
+  | "onPaid"
+  | "onError"
+> & { paypalClientId: string }) {
   const slot = useRef<HTMLDivElement>(null);
   const onPaidRef = useRef(onPaid);
   const onErrorRef = useRef(onError);
   const { settings } = useStore();
-  const clientId = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID?.trim() || "";
+  const clientId = paypalClientId.trim();
   onPaidRef.current = onPaid;
   onErrorRef.current = onError;
 
@@ -364,6 +376,173 @@ export function AfterpayPayment({
   );
 }
 
+function AffirmPayment({
+  amount,
+  currency,
+  orderId,
+  orderKey,
+  email,
+  shipping,
+  billing,
+  affirmPublicKey,
+  affirmEnv,
+  onPaid,
+  onError,
+}: Pick<
+  PaymentStepProps,
+  | "amount"
+  | "currency"
+  | "orderId"
+  | "orderKey"
+  | "email"
+  | "shipping"
+  | "billing"
+  | "affirmPublicKey"
+  | "affirmEnv"
+  | "onPaid"
+  | "onError"
+>) {
+  const { settings } = useStore();
+  const [submitting, setSubmitting] = useState(false);
+  const publicKey = affirmPublicKey?.trim() || "";
+
+  async function start() {
+    if (!publicKey) {
+      onError("Affirm is not available right now.");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      await loadAffirm(publicKey, affirmEnv === "live" ? "live" : "sandbox");
+      type AffirmApi = {
+        checkout: ((payload: unknown) => void) & {
+          open: (handlers: {
+            onSuccess: (result: { checkout_token?: string }) => void;
+            onFail: () => void;
+          }) => void;
+        };
+      };
+      const affirm = (window as unknown as { affirm?: AffirmApi }).affirm;
+      if (!affirm) throw new Error("Affirm could not be loaded.");
+      const shipTo = {
+        name: { first: shipping.firstName, last: shipping.lastName },
+        address: {
+          line1: shipping.address1,
+          line2: shipping.address2 || undefined,
+          city: shipping.city,
+          state: shipping.state,
+          zipcode: shipping.postcode,
+          country: shipping.country,
+        },
+        email,
+      };
+      affirm.checkout({
+        merchant: {
+          public_api_key: publicKey,
+          user_confirmation_url: window.location.href,
+          user_cancel_url: window.location.href,
+          user_confirmation_url_action: "GET",
+        },
+        shipping: shipTo,
+        billing: {
+          name: { first: billing.firstName, last: billing.lastName },
+          address: {
+            line1: billing.address1,
+            line2: billing.address2 || undefined,
+            city: billing.city,
+            state: billing.state,
+            zipcode: billing.postcode,
+            country: billing.country,
+          },
+          email,
+        },
+        items: [
+          {
+            display_name: `Order ${orderId}`,
+            sku: orderId,
+            unit_price: Math.round(amount * 100),
+            qty: 1,
+          },
+        ],
+        order_id: orderId,
+        currency: currency.toUpperCase(),
+        total: Math.round(amount * 100),
+        metadata: { mode: "modal" },
+      });
+      affirm.checkout.open({
+        onSuccess: (checkout) => {
+          const token = checkout.checkout_token || "";
+          if (!token) {
+            onError("Affirm did not return a payment.");
+            setSubmitting(false);
+            return;
+          }
+          void completeCheckoutAction({
+            orderId,
+            orderKey,
+            paymentIntentId: token,
+            provider: "affirm",
+          })
+            .then(onPaid)
+            .catch((error: unknown) => {
+              onError(error instanceof Error ? error.message : "Affirm payment failed.");
+            })
+            .finally(() => setSubmitting(false));
+        },
+        onFail: () => {
+          onError("Affirm payment was cancelled.");
+          setSubmitting(false);
+        },
+      });
+    } catch (error) {
+      onError(error instanceof Error ? error.message : "Affirm could not be started.");
+      setSubmitting(false);
+    }
+  }
+
+  if (!publicKey) {
+    return <Unavailable>Affirm is not available right now.</Unavailable>;
+  }
+
+  return (
+    <div className="space-y-4">
+      <p className="text-sm font-medium text-foreground">
+        Pay {formatPrice(amount, settings, currency)} with Affirm.
+      </p>
+      <Button type="button" size="lg" className="w-full" disabled={submitting} onClick={() => void start()}>
+        {submitting ? "Opening Affirm..." : "Continue with Affirm"}
+      </Button>
+      <SecureNote>
+        Affirm reviews the installment plan. This store only receives the approval.
+      </SecureNote>
+    </div>
+  );
+}
+
+function loadAffirm(publicKey: string, env: "sandbox" | "live") {
+  const scriptUrl =
+    env === "live"
+      ? "https://cdn1.affirm.com/js/v2/affirm.js"
+      : "https://cdn1-sandbox.affirm.com/js/v2/affirm.js";
+  return new Promise<void>((resolve, reject) => {
+    const runtime = window as unknown as {
+      affirm?: unknown;
+      _affirm_config?: Record<string, string>;
+    };
+    if (runtime.affirm) {
+      resolve();
+      return;
+    }
+    runtime._affirm_config = { public_api_key: publicKey, script: scriptUrl };
+    const script = document.createElement("script");
+    script.src = scriptUrl;
+    script.async = true;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error("Affirm could not be loaded."));
+    document.body.appendChild(script);
+  });
+}
+
 export function PaymentStep(props: PaymentStepProps) {
   if (props.mockPayment) {
     return (
@@ -387,6 +566,25 @@ export function PaymentStep(props: PaymentStepProps) {
         orderId={props.orderId}
         orderKey={props.orderKey}
         clientSecret={props.clientSecret}
+        paypalClientId={props.paypalClientId || ""}
+        onPaid={props.onPaid}
+        onError={props.onError}
+      />
+    );
+  }
+
+  if (props.paymentKind === "affirm") {
+    return (
+      <AffirmPayment
+        amount={props.amount}
+        currency={props.currency}
+        orderId={props.orderId}
+        orderKey={props.orderKey}
+        email={props.email}
+        shipping={props.shipping}
+        billing={props.billing}
+        affirmPublicKey={props.affirmPublicKey}
+        affirmEnv={props.affirmEnv}
         onPaid={props.onPaid}
         onError={props.onError}
       />
@@ -407,13 +605,13 @@ export function PaymentStep(props: PaymentStepProps) {
     return <Unavailable>This payment method is not available.</Unavailable>;
   }
 
-  if (!getStripePublishableKey() || !props.clientSecret) {
+  if (!props.stripePublishableKey || !props.clientSecret) {
     return <Unavailable>Card payment is not available right now.</Unavailable>;
   }
 
   return (
     <Elements
-      stripe={getStripeJs()}
+      stripe={getStripeJs(props.stripePublishableKey)}
       options={{
         clientSecret: props.clientSecret,
         appearance: {

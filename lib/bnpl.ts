@@ -3,16 +3,6 @@ import type { BnplPublicConfig, StoreSettings } from "@/lib/types";
 const AFFIRM_CURRENCIES = new Set(["USD", "CAD"]);
 const AFTERPAY_CURRENCIES = new Set(["AUD", "NZD", "USD", "CAD", "GBP"]);
 
-export function getBnplPublicConfig(): BnplPublicConfig {
-  const env = process.env.AFFIRM_ENV?.trim().toLowerCase();
-  return {
-    affirmPublicKey: process.env.NEXT_PUBLIC_AFFIRM_PUBLIC_KEY?.trim() || "",
-    affirmEnv: env === "live" ? "live" : "sandbox",
-    afterpayMpid: process.env.NEXT_PUBLIC_AFTERPAY_MPID?.trim() || "",
-    afterpayPlacementId: process.env.NEXT_PUBLIC_AFTERPAY_PLACEMENT_ID?.trim() || "",
-  };
-}
-
 export function amountToCents(price: number, decimals: number) {
   const places = Number.isFinite(decimals) ? decimals : 2;
   return Math.round(price * 10 ** places);
