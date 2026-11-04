@@ -1,4 +1,5 @@
 import Stripe from "stripe";
+import { getPaymentAccounts } from "@/lib/payment-config";
 
 const ZERO_DECIMAL = new Set([
   "BIF",
@@ -19,7 +20,7 @@ const ZERO_DECIMAL = new Set([
   "XPF",
 ]);
 
-let stripe: Stripe | null = null;
+let stripeCache: { key: string; client: Stripe } | null = null;
 
 function envYes(value: string | undefined) {
   const normalized = value?.trim().toLowerCase();
@@ -40,19 +41,33 @@ export function isMockPaymentIntentId(id: string) {
   return id.startsWith("dev_mock_");
 }
 
-export function isStripeConfigured() {
-  return Boolean(process.env.STRIPE_SECRET_KEY?.trim());
+export async function isStripeConfigured() {
+  const accounts = await getPaymentAccounts();
+  return Boolean(accounts.stripe.secretKey);
 }
 
-export function getStripe(): Stripe {
-  const key = process.env.STRIPE_SECRET_KEY?.trim();
+export async function getStripeWebhookSecret() {
+  const accounts = await getPaymentAccounts();
+  return accounts.stripe.webhookSecret;
+}
+
+export async function getStripe(): Promise<Stripe> {
+  const accounts = await getPaymentAccounts();
+  const key = accounts.stripe.secretKey;
   if (!key) {
-    throw new Error("Stripe is not configured. Set STRIPE_SECRET_KEY in .env.local.");
+    throw new Error("Stripe is not configured. Add a secret key in Admin.");
   }
-  if (!stripe) {
-    stripe = new Stripe(key);
+  if (!stripeCache || stripeCache.key !== key) {
+    stripeCache = { key, client: new Stripe(key) };
   }
-  return stripe;
+  return stripeCache.client;
+}
+
+export async function pingStripe(secretKey?: string) {
+  const key = secretKey?.trim() || (await getPaymentAccounts()).stripe.secretKey;
+  if (!key) throw new Error("Add the keys first.");
+  const stripe = new Stripe(key);
+  await stripe.balance.retrieve();
 }
 
 export function toStripeAmount(total: string | number, currency: string) {

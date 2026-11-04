@@ -11,8 +11,10 @@ import {
   markOrderPaid,
   setOrderCustomerNote,
 } from "@/lib/api";
+import { captureAffirmCheckout } from "@/lib/affirm";
 import { captureAfterpayPayment, createAfterpayCheckout } from "@/lib/afterpay";
 import { capturePayPalOrder, createPayPalOrder } from "@/lib/paypal";
+import { checkoutPublicConfig, getPaymentAccounts } from "@/lib/payment-config";
 import {
   getPendingCheckout,
   getStoreCart,
@@ -42,11 +44,9 @@ import type {
   StoreCart,
 } from "@/lib/types";
 
-function requireStripe() {
-  if (!isStripeConfigured()) {
-    throw new Error(
-      "Stripe is not configured. Set STRIPE_SECRET_KEY in .env.local.",
-    );
+async function requireStripe() {
+  if (!(await isStripeConfigured())) {
+    throw new Error("Stripe is not configured. Add a secret key in Admin.");
   }
   return getStripe();
 }
@@ -57,19 +57,29 @@ export async function getCheckoutOptionsAction(): Promise<{
   defaultCountry: string;
   mockPayment: boolean;
   paymentMethods: CheckoutPaymentMethod[];
+  stripePublishableKey: string;
+  paypalClientId: string;
+  affirmPublicKey: string;
+  affirmEnv: "sandbox" | "live";
 }> {
-  const [cart, countries, defaultCountry, paymentMethods] = await Promise.all([
+  const [cart, countries, defaultCountry, paymentMethods, accounts] = await Promise.all([
     getStoreCart(),
     getCountries(),
     getDefaultCountry(),
     getEnabledCheckoutMethods(),
+    getPaymentAccounts(),
   ]);
+  const publicConfig = checkoutPublicConfig(accounts);
   return {
     cart,
     countries,
     defaultCountry,
     mockPayment: isMockPaymentEnabled(),
     paymentMethods,
+    stripePublishableKey: publicConfig.stripePublishableKey,
+    paypalClientId: publicConfig.paypalClientId,
+    affirmPublicKey: publicConfig.affirmPublicKey,
+    affirmEnv: publicConfig.affirmEnv,
   };
 }
 
@@ -77,7 +87,7 @@ async function abandonPendingIfStale(cartHash: string) {
   const pending = await getPendingCheckout();
   if (!pending) return;
   if (pending.cartHash === cartHash) return;
-  const stripe = isStripeConfigured() ? getStripe() : null;
+  const stripe = (await isStripeConfigured()) ? await getStripe() : null;
   if (pending.paymentIntentId?.startsWith("pi_") && stripe) {
     try {
       await stripe.paymentIntents.cancel(pending.paymentIntentId);
@@ -112,7 +122,7 @@ async function createCardPaymentIntent(input: {
   shipping: Address;
   existingIntentId?: string;
 }) {
-  const stripe = requireStripe();
+  const stripe = await requireStripe();
   const amount = toStripeAmount(input.amount, input.currency);
   const currency = input.currency.trim().toLowerCase();
   const metadata = {
@@ -163,7 +173,7 @@ export async function createCheckoutSessionAction(
     methods[0];
   if (!mockPayment && !selected) {
     throw new Error(
-      "No payment methods are enabled. Turn one on in WooCommerce → Settings → Payments.",
+      "No payment methods are enabled. Turn one on in Admin.",
     );
   }
   const paymentKind: CheckoutPaymentKind | "mock" = mockPayment
@@ -304,6 +314,16 @@ async function beginProviderPayment(input: {
     return { ...base, clientSecret: paypalOrderId };
   }
 
+  if (input.kind === "affirm") {
+    await setPendingCheckout({
+      orderId: input.orderId,
+      orderKey: input.orderKey,
+      paymentIntentId: `affirm:${input.orderId}`,
+      cartHash: input.cart.cartHash,
+    });
+    return { ...base, clientSecret: `affirm:${input.orderId}` };
+  }
+
   if (input.kind === "afterpay") {
     const origin = await requestOrigin();
     const confirm = new URL(`/order/${input.orderId}`, origin || "http://localhost:3000");
@@ -423,6 +443,32 @@ export async function completeCheckoutAction(
     return finishPaid(orderId, orderKey, captured.captureId, "paypal");
   }
 
+  if (provider === "affirm") {
+    const pending = await getPendingCheckout();
+    if (
+      !pending ||
+      pending.orderId !== orderId ||
+      pending.paymentIntentId !== `affirm:${orderId}`
+    ) {
+      throw new Error("Payment confirmation is incomplete.");
+    }
+    const captured = await captureAffirmCheckout({
+      checkoutToken: paymentIntentId,
+      orderId,
+    });
+    if (captured.orderId && captured.orderId !== orderId) {
+      throw new Error("Payment does not match this order.");
+    }
+    const order = await getOrder(orderId);
+    if (
+      captured.amount > 0 &&
+      Math.abs(captured.amount - Number(order.total || 0)) > 0.05
+    ) {
+      throw new Error("Payment amount does not match the order.");
+    }
+    return finishPaid(orderId, orderKey, captured.chargeId, "affirm");
+  }
+
   if (provider === "afterpay") {
     const captured = await captureAfterpayPayment(paymentIntentId, orderId);
     if (captured.orderId && captured.orderId !== orderId) {
@@ -438,7 +484,7 @@ export async function completeCheckoutAction(
     return finishPaid(orderId, orderKey, captured.paymentId, "afterpay");
   }
 
-  const stripe = requireStripe();
+  const stripe = await requireStripe();
   const intent = await stripe.paymentIntents.retrieve(paymentIntentId);
   const wooOrderId = intent.metadata?.woo_order_id;
   const metadataKey = intent.metadata?.order_key || "";

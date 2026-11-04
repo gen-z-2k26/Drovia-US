@@ -111,7 +111,7 @@ export interface ProductPaymentDisplay {
   afterpayEnabled: boolean;
 }
 
-export type CheckoutPaymentKind = "stripe" | "paypal" | "afterpay";
+export type CheckoutPaymentKind = "stripe" | "paypal" | "affirm" | "afterpay";
 
 export interface CheckoutPaymentMethod {
   kind: CheckoutPaymentKind;
@@ -505,7 +505,7 @@ export interface CompleteCheckoutPayload {
   orderId: string;
   orderKey: string;
   paymentIntentId: string;
-  provider?: "stripe" | "paypal" | "afterpay" | "mock";
+  provider?: "stripe" | "paypal" | "affirm" | "afterpay" | "mock";
 }
 
 export interface CreateOrderResult {
