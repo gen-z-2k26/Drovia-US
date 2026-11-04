@@ -4,6 +4,7 @@ import {
   isWooConfigured,
   isWooUnreachable,
   markWooReachable,
+  isHardWooOutage,
   markWooUnreachable,
   WOO_TIMEOUT_MS,
 } from "@/lib/api/client";
@@ -80,8 +81,12 @@ async function storeRequest<T>(
       cache: "no-store",
       signal: AbortSignal.timeout(WOO_TIMEOUT_MS),
     });
-  } catch {
-    markWooUnreachable();
+  } catch (error) {
+    const code =
+      error && typeof error === "object" && "cause" in error
+        ? (error as { cause?: { code?: string } }).cause?.code
+        : undefined;
+    if (isHardWooOutage(code)) markWooUnreachable();
     throw new WooCommerceApiError(
       "The store server is unreachable right now. Please try again shortly.",
       { code: "ECONNABORTED", endpoint: url.pathname },

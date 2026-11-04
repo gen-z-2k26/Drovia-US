@@ -4,6 +4,7 @@ import {
   getWooOrigin,
   isWooConfigured,
   isWooUnreachable,
+  isHardWooOutage,
   markWooUnreachable,
   wooGet,
   wooGetWithHeaders,
@@ -193,8 +194,12 @@ async function fetchWpSiteInfo(): Promise<{
       description?: string;
       url?: string;
     };
-  } catch {
-    markWooUnreachable();
+  } catch (error) {
+    const code =
+      error && typeof error === "object" && "cause" in error
+        ? (error as { cause?: { code?: string } }).cause?.code
+        : undefined;
+    if (isHardWooOutage(code)) markWooUnreachable();
     return null;
   }
 }
@@ -211,8 +216,12 @@ async function fetchStoreMoney(): Promise<WooStoreMoney | null> {
     if (!response.ok) return null;
     const data = (await response.json()) as { totals?: WooStoreMoney };
     return data.totals ?? null;
-  } catch {
-    markWooUnreachable();
+  } catch (error) {
+    const code =
+      error && typeof error === "object" && "cause" in error
+        ? (error as { cause?: { code?: string } }).cause?.code
+        : undefined;
+    if (isHardWooOutage(code)) markWooUnreachable();
     return null;
   }
 }
