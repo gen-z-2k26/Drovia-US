@@ -5,12 +5,12 @@ import {
   getOrder,
   markOrderPaid,
 } from "@/lib/api";
-import { getStripe, stripeAmountMatches } from "@/lib/stripe";
+import { getStripe, getStripeWebhookSecret, stripeAmountMatches } from "@/lib/stripe";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
-  const secret = process.env.STRIPE_WEBHOOK_SECRET?.trim();
+  const secret = (await getStripeWebhookSecret()).trim();
   if (!secret) {
     return NextResponse.json(
       { error: "Stripe webhook secret is not configured." },
@@ -26,7 +26,7 @@ export async function POST(request: Request) {
   const body = await request.text();
   let event;
   try {
-    event = getStripe().webhooks.constructEvent(body, signature, secret);
+    event = (await getStripe()).webhooks.constructEvent(body, signature, secret);
   } catch {
     return NextResponse.json({ error: "Invalid Stripe signature." }, { status: 400 });
   }

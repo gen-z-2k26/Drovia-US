@@ -10,7 +10,7 @@ import {
   getSiteSettings,
   getSiteUrl,
 } from "@/lib/api";
-import { getBnplPublicConfig } from "@/lib/bnpl";
+import { getBnplPublicConfig } from "@/lib/bnpl-server";
 
 export const revalidate = 60;
 
@@ -164,7 +164,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
       <ProductDetail
         product={product}
         payment={await getProductPaymentDisplay(settings)}
-        bnpl={getBnplPublicConfig()}
+        bnpl={await getBnplPublicConfig()}
         related={related}
       />
     </>

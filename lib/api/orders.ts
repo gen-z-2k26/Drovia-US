@@ -148,7 +148,9 @@ export async function createPendingOrderFromCart(
           ? "PayPal"
           : paymentMethod === "afterpay"
             ? "Afterpay"
-            : "Credit card (Stripe)");
+            : paymentMethod === "affirm"
+              ? "Affirm"
+              : "Credit card (Stripe)");
     const order = await wooPost<WooOrder>("orders", {
       payment_method: paymentMethod,
       payment_method_title: paymentMethodTitle,

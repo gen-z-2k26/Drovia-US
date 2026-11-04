@@ -48,6 +48,8 @@ export function iconsForCheckoutMethods(
       }
     } else if (method.kind === "paypal") {
       add("paypal");
+    } else if (method.kind === "affirm") {
+      add("affirm");
     } else if (method.kind === "afterpay") {
       add("afterpay");
     }
