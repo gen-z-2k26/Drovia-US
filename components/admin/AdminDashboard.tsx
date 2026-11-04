@@ -437,7 +437,7 @@ const GATEWAY_MARK: Record<PaymentProviderId, string> = {
 
 function GatewayMark({ id }: { id: PaymentProviderId }) {
   return (
-    <span className="inline-flex h-8 min-w-8 items-center">
+    <span className="inline-flex h-9 items-center rounded-md bg-white px-2 ring-1 ring-black/10 dark:ring-white/15">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={GATEWAY_MARK[id]}
@@ -532,17 +532,16 @@ function Switch({
       aria-checked={on}
       aria-label={label}
       onClick={() => onChange(!on)}
-      className="inline-flex h-10 shrink-0 items-center gap-2.5 rounded-full border border-neutral-300 bg-white py-1 pr-1 pl-3.5"
+      className="inline-flex h-10 shrink-0 items-center gap-2.5 rounded-full border border-border bg-background py-1 pr-1 pl-3.5"
     >
-      <span className={`w-6 text-left text-[11px] font-semibold tracking-[0.08em] uppercase ${on ? "text-neutral-900" : "text-neutral-400"}`}>
+      <span className={`w-6 text-left text-[11px] font-semibold tracking-[0.08em] uppercase ${on ? "text-foreground" : "text-muted-foreground"}`}>
         {on ? "On" : "Off"}
       </span>
       <span
-        className="relative h-7 w-12 rounded-full"
-        style={{ backgroundColor: on ? "#1a1816" : "#d6d3d1" }}
+        className={`relative h-7 w-12 rounded-full ${on ? "bg-foreground" : "bg-muted"}`}
       >
         <span
-          className="absolute top-[3px] left-[3px] size-[22px] rounded-full bg-white shadow-[0_1px_2px_rgba(0,0,0,0.28)] transition-transform duration-200 ease-out"
+          className="absolute top-[3px] left-[3px] size-[22px] rounded-full bg-background shadow-sm transition-transform duration-200 ease-out"
           style={{ transform: on ? "translateX(20px)" : "translateX(0)" }}
         />
       </span>
