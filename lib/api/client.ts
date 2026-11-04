@@ -5,8 +5,20 @@ import axios, {
 } from "axios";
 import { toWooCommerceApiError, WooCommerceApiError } from "@/lib/api/errors";
 
-export const WOO_TIMEOUT_MS = 6_000;
+export const WOO_TIMEOUT_MS = 20_000;
 const WOO_DOWN_MS = 45_000;
+
+const HARD_OUTAGE = new Set([
+  "ETIMEDOUT",
+  "ENETUNREACH",
+  "ECONNREFUSED",
+  "ENOTFOUND",
+  "ERR_NETWORK",
+]);
+
+export function isHardWooOutage(code?: string) {
+  return Boolean(code && HARD_OUTAGE.has(code));
+}
 
 let wooDownUntil = 0;
 
@@ -136,14 +148,7 @@ export function getWooClient(): AxiosInstance {
     },
     (error) => {
       const mapped = toWooCommerceApiError(error);
-      if (
-        mapped.code === "ETIMEDOUT" ||
-        mapped.code === "ECONNABORTED" ||
-        mapped.code === "ENETUNREACH" ||
-        mapped.code === "ECONNREFUSED" ||
-        mapped.code === "ENOTFOUND" ||
-        mapped.code === "ERR_NETWORK"
-      ) {
+      if (isHardWooOutage(mapped.code)) {
         markWooUnreachable();
       }
       throw mapped;
