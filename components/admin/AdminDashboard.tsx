@@ -125,8 +125,8 @@ export function AdminDashboard({
   ];
 
   return (
-    <div className="min-h-screen bg-background text-foreground lg:grid lg:grid-cols-[232px_1fr]">
-      <aside className="flex items-center justify-between border-b border-border bg-card px-4 py-3 lg:flex-col lg:items-stretch lg:justify-between lg:border-r lg:border-b-0 lg:px-3 lg:py-5">
+    <div className="min-h-screen bg-background text-foreground lg:grid lg:h-screen lg:grid-cols-[232px_1fr] lg:overflow-hidden">
+      <aside className="flex items-center justify-between border-b border-border bg-card px-4 py-3 lg:h-screen lg:flex-col lg:items-stretch lg:justify-between lg:border-r lg:border-b-0 lg:px-3 lg:py-5">
         <div>
           <p className="px-2 text-[11px] font-medium tracking-[0.18em] text-muted-foreground uppercase">
             {storeName}
@@ -159,7 +159,7 @@ export function AdminDashboard({
         </div>
       </aside>
 
-      <div className="min-w-0">
+      <div className="min-w-0 lg:h-screen lg:overflow-y-auto">
         <header className="sticky top-0 z-10 flex items-center justify-between gap-4 border-b border-border bg-background/90 px-5 py-3 backdrop-blur md:px-8">
           <div>
             <h1 className="font-display text-2xl tracking-tight">Payments</h1>
