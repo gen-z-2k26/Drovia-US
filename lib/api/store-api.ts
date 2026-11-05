@@ -19,6 +19,7 @@ import {
 import type { Address, GuestOrder, StoreCart } from "@/lib/types";
 
 const CART_COOKIE = "wc_cart_token";
+const NONCE_COOKIE = "wc_store_nonce";
 const PENDING_COOKIE = "wc_pending_order";
 const TOKEN_MAX_AGE = 60 * 60 * 48;
 
@@ -33,6 +34,7 @@ type StoreRequestOptions = {
   method?: string;
   body?: unknown;
   query?: Record<string, string>;
+  nonce?: string;
 };
 
 function headerValue(headers: Headers, name: string) {
@@ -58,12 +60,14 @@ async function storeRequest<T>(
 
   const store = await cookies();
   const token = store.get(CART_COOKIE)?.value;
+  const nonce = options.nonce || store.get(NONCE_COOKIE)?.value;
   const headers: Record<string, string> = {
     Accept: "application/json",
     "Content-Type": "application/json",
     "User-Agent": "Ecom-Builder-Storefront/1.0",
   };
   if (token) headers["Cart-Token"] = token;
+  if (nonce && (options.method || "GET") !== "GET") headers.Nonce = nonce;
 
   const url = new URL(`${origin}/wp-json/wc/store/v1/${path.replace(/^\//, "")}`);
   if (options.query) {
@@ -95,14 +99,25 @@ async function storeRequest<T>(
   markWooReachable();
 
   const nextToken = headerValue(response.headers, "Cart-Token");
-  if (nextToken) {
-    store.set(CART_COOKIE, nextToken, {
-      httpOnly: true,
-      sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
-      path: "/",
-      maxAge: TOKEN_MAX_AGE,
-    });
+  const nextNonce =
+    headerValue(response.headers, "Nonce") ||
+    headerValue(response.headers, "X-WC-Store-API-Nonce");
+  const cookieOptions = {
+    httpOnly: true,
+    sameSite: "lax" as const,
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: TOKEN_MAX_AGE,
+  };
+  if (nextToken) store.set(CART_COOKIE, nextToken, cookieOptions);
+  if (nextNonce) store.set(NONCE_COOKIE, nextNonce, cookieOptions);
+
+  const contentType = response.headers.get("content-type") || "";
+  if (!/application\/json|application\/.*\+json/i.test(contentType)) {
+    throw new WooCommerceApiError(
+      "The store cart did not return JSON. Check that the WooCommerce Store API is reachable.",
+      { status: response.status, code: "invalid_content_type", endpoint: url.pathname },
+    );
   }
 
   let json: unknown = null;
@@ -124,7 +139,7 @@ async function storeRequest<T>(
     );
   }
 
-  return { data: json as T, token: nextToken };
+  return { data: json as T, token: nextToken, nonce: nextNonce };
 }
 
 async function cartCall(
@@ -140,14 +155,26 @@ export async function getStoreCart(): Promise<StoreCart> {
   return cartCall("cart");
 }
 
+async function currentStoreNonce() {
+  const store = await cookies();
+  return store.get(NONCE_COOKIE)?.value || "";
+}
+
 export async function addStoreCartItem(input: {
   id: number;
   quantity: number;
 }): Promise<StoreCart> {
-  return cartCall("cart/add-item", {
+  let nonce = await currentStoreNonce();
+  if (!nonce) {
+    const session = await storeRequest<RawStoreCart>("cart");
+    nonce = session.nonce || "";
+  }
+  const { data } = await storeRequest<RawStoreCart>("cart/add-item", {
     method: "POST",
+    nonce,
     body: { id: input.id, quantity: input.quantity },
   });
+  return mapStoreCart(data);
 }
 
 export async function updateStoreCartItem(input: {

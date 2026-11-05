@@ -468,12 +468,6 @@ export async function getProduct(slug: string): Promise<Product | null> {
     return null;
   }
 
-  const all = await getProducts({ perPage: 100 });
-  const fromCatalog = all.find((entry) => entry.slug === slug);
-  if (fromCatalog) {
-    return fromCatalog;
-  }
-
   return cachedSoftWooCall(
     `product:slug:${slug}`,
     async () => {
