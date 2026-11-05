@@ -297,31 +297,34 @@ export function CheckoutPage() {
   return (
     <div className="min-h-full bg-muted/40">
       <header className="border-b border-border bg-background">
-        <div className="relative mx-auto flex h-16 w-full max-w-[1240px] items-center justify-center px-6 lg:px-10">
+        <div className="mx-auto grid h-14 w-full max-w-[1240px] grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 px-4 sm:h-16 sm:px-6 lg:px-10">
           {cart.items.length ? (
             <button
               type="button"
-              className="absolute left-6 inline-flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground lg:left-10"
+              className="inline-flex min-w-0 items-center gap-1 justify-self-start text-sm text-muted-foreground transition-colors hover:text-foreground"
               onClick={() => setOpen(true)}
             >
-              <ChevronLeft className="size-4" aria-hidden />
-              Back to cart
+              <ChevronLeft className="size-4 shrink-0" aria-hidden />
+              <span className="truncate sm:hidden">Cart</span>
+              <span className="hidden truncate sm:inline">Back to cart</span>
             </button>
           ) : (
             <Link
               href="/products"
-              className="absolute left-6 inline-flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground lg:left-10"
+              className="inline-flex min-w-0 items-center gap-1 justify-self-start text-sm text-muted-foreground transition-colors hover:text-foreground"
             >
-              <ChevronLeft className="size-4" aria-hidden />
-              Back to products
+              <ChevronLeft className="size-4 shrink-0" aria-hidden />
+              <span className="truncate sm:hidden">Shop</span>
+              <span className="hidden truncate sm:inline">Back to products</span>
             </Link>
           )}
-          <Link href="/" aria-label={settings.name}>
-            <BrandLogo heightClass="h-7 sm:h-8" />
+          <Link href="/" aria-label={settings.name} className="justify-self-center">
+            <BrandLogo heightClass="h-6 max-w-[9.5rem] sm:h-8 sm:max-w-none" />
           </Link>
+          <span aria-hidden />
         </div>
       </header>
-      <div className="mx-auto grid w-full max-w-[1240px] items-start gap-x-10 px-6 py-8 lg:grid-cols-[minmax(0,1fr)_400px] lg:px-10 lg:py-10">
+      <div className="mx-auto grid w-full max-w-[1240px] items-start gap-x-10 px-4 py-5 sm:px-6 sm:py-8 lg:grid-cols-[minmax(0,1fr)_400px] lg:px-10 lg:py-10">
       <div className={cn("min-w-0", !cart.items.length && "lg:col-span-2")}>
 
       {!cart.items.length ? (
@@ -351,7 +354,7 @@ export function CheckoutPage() {
         <>
           <button
             type="button"
-            className="mt-6 flex w-full items-center justify-between rounded-[8px] border border-border bg-card px-4 py-3 text-sm lg:hidden"
+            className="flex w-full items-center justify-between gap-3 rounded-[8px] border border-border bg-card px-3.5 py-3 text-sm lg:hidden"
             onClick={() => setShowSummary((open) => !open)}
           >
             <span className="flex items-center gap-2 font-medium">
@@ -368,15 +371,15 @@ export function CheckoutPage() {
             </span>
           </button>
           <div className={cn("mt-4 w-full lg:hidden", showSummary ? "block" : "hidden")}>
-            <div className="rounded-[8px] border border-border bg-card p-5">
+            <div className="rounded-[8px] border border-border bg-card p-4 sm:p-5">
               <OrderSummary cart={cart} />
               <PromiseCard />
             </div>
           </div>
 
-          <section className="min-w-0 pb-16 pt-8">
+          <section className="min-w-0 pb-8 pt-6 sm:pb-16 sm:pt-8">
             <form
-              className="mx-auto w-full max-w-[560px] space-y-9 lg:mx-0"
+              className="mx-auto w-full max-w-[560px] space-y-7 sm:space-y-9 lg:mx-0"
               onSubmit={(event) => {
                 event.preventDefault();
                 void proceedToPayment();
@@ -399,7 +402,7 @@ export function CheckoutPage() {
 
               <section className="space-y-3">
                 <h2 className="text-base font-semibold">Shipping address</h2>
-                <div className="grid min-w-0 gap-3 sm:grid-cols-2">
+                <div className="grid min-w-0 grid-cols-2 gap-3">
                   <Field
                     id="first-name"
                     label="First name"
@@ -419,7 +422,7 @@ export function CheckoutPage() {
                     }
                   />
                   <Field
-                    className="sm:col-span-2"
+                    className="col-span-2"
                     id="address1"
                     label="Street address"
                     value={shipping.address1}
@@ -430,7 +433,7 @@ export function CheckoutPage() {
                     onBlur={() => void refreshRates()}
                   />
                   <Field
-                    className="sm:col-span-2"
+                    className="col-span-2"
                     id="address2"
                     label="Apartment, suite, etc. (optional)"
                     value={shipping.address2}
@@ -439,8 +442,9 @@ export function CheckoutPage() {
                     }
                     onBlur={() => void refreshRates()}
                   />
-                  <div className="grid gap-3 sm:col-span-2 sm:grid-cols-3">
+                  <div className="col-span-2 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                     <Field
+                      className="sm:col-span-2 lg:col-span-1"
                       id="city"
                       label="City"
                       value={shipping.city}
@@ -486,7 +490,7 @@ export function CheckoutPage() {
                   </div>
                   {countryOptions.length ? (
                     <CheckoutSelect
-                      className="sm:col-span-2"
+                      className="col-span-2"
                       id="country"
                       label="Select country / region"
                       value={shipping.country}
@@ -503,7 +507,7 @@ export function CheckoutPage() {
                     />
                   ) : (
                     <Field
-                      className="sm:col-span-2"
+                      className="col-span-2"
                       id="country"
                       label="Select country / region"
                       value={shipping.country}
@@ -515,7 +519,7 @@ export function CheckoutPage() {
                     />
                   )}
                   <Field
-                    className="sm:col-span-2"
+                    className="col-span-2"
                     id="phone"
                     label="Phone"
                     value={shipping.phone}
@@ -524,14 +528,14 @@ export function CheckoutPage() {
                     }
                   />
                 </div>
-                <label className="flex items-center gap-2.5 pt-1 text-sm">
+                <label className="flex items-start gap-2.5 pt-1 text-sm">
                   <input
                     type="checkbox"
-                    className="size-4 rounded border-input accent-primary"
+                    className="mt-0.5 size-4 shrink-0 rounded border-input accent-primary"
                     checked={isGift}
                     onChange={(event) => setIsGift(event.target.checked)}
                   />
-                  <span className="flex items-center gap-1.5 text-muted-foreground">
+                  <span className="flex items-start gap-1.5 leading-snug text-muted-foreground">
                     <Gift className="size-3.5 text-primary" aria-hidden />
                     This is a gift - we will skip prices on the packing slip
                   </span>
@@ -552,10 +556,10 @@ export function CheckoutPage() {
                     + Add a note for the seller
                   </button>
                 )}
-                <label className="flex items-center gap-2.5 text-sm text-muted-foreground">
+                <label className="flex items-start gap-2.5 text-sm leading-snug text-muted-foreground">
                   <input
                     type="checkbox"
-                    className="size-4 rounded border-input accent-primary"
+                    className="mt-0.5 size-4 shrink-0 rounded border-input accent-primary"
                     checked={same}
                     onChange={(event) => setSame(event.target.checked)}
                   />
@@ -818,7 +822,7 @@ function PaymentMethodPicker({
             <label
               key={method.kind}
               className={cn(
-                "flex items-center gap-3 rounded-[8px] border bg-card px-4 py-3.5",
+                "flex items-start gap-3 rounded-[8px] border bg-card px-3.5 py-3 sm:items-center sm:px-4 sm:py-3.5",
                 selected
                   ? "border-primary bg-primary/10"
                   : "border-border",
@@ -835,7 +839,7 @@ function PaymentMethodPicker({
               />
               <span
                 className={cn(
-                  "flex size-4 shrink-0 items-center justify-center rounded-full border-2",
+                  "mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full border-2 sm:mt-0",
                   selected ? "border-primary" : "border-foreground/35",
                 )}
                 aria-hidden
@@ -852,7 +856,7 @@ function PaymentMethodPicker({
                   {methodNote(method.kind)}
                 </span>
               </span>
-              <span className="flex shrink-0 flex-wrap justify-end gap-1">
+              <span className="flex max-w-[42%] shrink-0 flex-wrap justify-end gap-1">
                 {icons.slice(0, 4).map((icon) => (
                   <PaymentBrandIcon
                     key={icon.slug}
@@ -870,7 +874,7 @@ function PaymentMethodPicker({
 }
 
 const fieldShell =
-  "h-[52px] w-full rounded-[8px] border border-border bg-card px-4 text-sm text-foreground shadow-none placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20";
+  "h-12 w-full rounded-[8px] border border-border bg-card px-3.5 text-base text-foreground shadow-none placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20 sm:h-[52px] sm:px-4 sm:text-sm";
 
 function Field({
   id,
@@ -1048,7 +1052,7 @@ function OrderSummary({ cart }: { cart: StoreCart }) {
               <StoreImage src={item.image} alt="" sizes="56px" />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium leading-snug">{item.name}</p>
+              <p className="text-sm font-medium leading-snug break-words">{item.name}</p>
               <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
                 <button
                   type="button"

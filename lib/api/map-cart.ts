@@ -1,3 +1,4 @@
+import { plainStoreMessage } from "@/lib/cart-result";
 import { fromStoreAmount } from "@/lib/money";
 import type {
   Address,
@@ -156,7 +157,7 @@ function mapItems(raw: RawStoreCart): StoreCartItem[] {
       key: String(item.key || ""),
       productId: String(item.id ?? ""),
       slug: slugFromPermalink(item.permalink),
-      name: item.name || "Item",
+      name: plainStoreMessage(item.name || "") || "Item",
       price: fromStoreAmount(item.prices?.price, minor),
       regularPrice: fromStoreAmount(
         item.prices?.regular_price || item.prices?.price,
@@ -201,7 +202,7 @@ function mapRates(raw: RawStoreCart): ShippingRate[] {
         packageId,
         rateId: rate.rate_id || "",
         methodId: rate.method_id || "",
-        name: rate.name || "Shipping",
+        name: plainStoreMessage(rate.name || "") || "Shipping",
         price: fromStoreAmount(rate.price, minor),
         selected: Boolean(rate.selected),
       });

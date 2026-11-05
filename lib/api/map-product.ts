@@ -36,7 +36,35 @@ export type WooProduct = {
   sku?: string;
   related_ids?: number[];
   stock_status?: string;
+  stock_quantity?: number | string | null;
+  manage_stock?: boolean | string;
+  backorders?: string;
 };
+
+export function productIsInStock(product: Pick<
+  WooProduct,
+  "stock_status" | "stock_quantity" | "manage_stock" | "backorders"
+>): boolean {
+  const status = String(product.stock_status || "").toLowerCase();
+  if (status === "outofstock") return false;
+  if (status === "onbackorder") return true;
+
+  const manages =
+    product.manage_stock === true ||
+    product.manage_stock === "yes" ||
+    product.manage_stock === "true";
+  const allowsBackorder =
+    product.backorders === "yes" || product.backorders === "notify";
+  if (manages && !allowsBackorder) {
+    if (product.stock_quantity == null || product.stock_quantity === "") {
+      return false;
+    }
+    const quantity = Number(product.stock_quantity);
+    if (!Number.isFinite(quantity) || quantity <= 0) return false;
+  }
+
+  return true;
+}
 
 function stripHtml(value: string) {
   return value
@@ -157,7 +185,7 @@ export function mapWooProduct(product: WooProduct): Product {
     averageRating: toNumber(product.average_rating),
     ratingCount: toNumber(product.rating_count),
     menuOrder: toNumber(product.menu_order),
-    inStock: product.stock_status !== "outofstock",
+    inStock: productIsInStock(product),
   };
 }
 

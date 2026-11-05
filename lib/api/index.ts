@@ -117,6 +117,9 @@ const PRODUCT_FIELDS = [
   "sku",
   "related_ids",
   "stock_status",
+  "stock_quantity",
+  "manage_stock",
+  "backorders",
 ].join(",");
 
 const CARD_FIELDS = [
@@ -135,6 +138,9 @@ const CARD_FIELDS = [
   "categories",
   "sku",
   "stock_status",
+  "stock_quantity",
+  "manage_stock",
+  "backorders",
 ].join(",");
 
 type CacheEntry<T> = {
