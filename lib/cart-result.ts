@@ -11,6 +11,12 @@ const NAMED_ENTITIES: Record<string, string> = {
   lt: "<",
   nbsp: " ",
   quot: '"',
+  times: "×",
+  ndash: "–",
+  mdash: "—",
+  rsquo: "’",
+  lsquo: "‘",
+  hellip: "…",
 };
 
 export function plainStoreMessage(value: string) {

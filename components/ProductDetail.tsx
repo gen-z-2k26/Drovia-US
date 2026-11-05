@@ -260,7 +260,13 @@ export function ProductDetail({
               disabled={!product.inStock || busy}
               onClick={() => void handleAdd()}
             >
-              {added ? "Added" : busy ? "Adding..." : "Add to cart"}
+              {added
+                ? "Added"
+                : busy
+                  ? "Adding..."
+                  : product.inStock
+                    ? "Add to cart"
+                    : "Out of stock"}
             </Button>
             {page.enableShopNow && product.inStock ? (
               <Button
