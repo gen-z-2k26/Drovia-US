@@ -45,6 +45,7 @@ import {
   updateCartItemAction,
   updateCustomerAction,
 } from "@/app/actions/cart";
+import { unwrapCart, unwrapResult } from "@/lib/cart-result";
 import type {
   Address,
   CheckoutPaymentKind,
@@ -119,6 +120,7 @@ export function CheckoutPage() {
   useEffect(() => {
     let cancelled = false;
     getCheckoutOptionsAction()
+      .then(unwrapResult)
       .then((options) => {
         if (cancelled) return;
         setCart(options.cart);
@@ -144,10 +146,7 @@ export function CheckoutPage() {
       .catch((error: unknown) => {
         if (!cancelled) {
           setErrors({
-            form:
-              error instanceof Error
-                ? error.message
-                : "Could not load checkout.",
+            form: userErrorMessage(error, "Could not load checkout."),
           });
         }
       });
@@ -186,10 +185,12 @@ export function CheckoutPage() {
       : currentBilling;
     try {
       setCart(
-        await updateCustomerAction({
-          shipping: nextShipping,
-          billing: nextBilling,
-        }),
+        unwrapCart(
+          await updateCustomerAction({
+            shipping: nextShipping,
+            billing: nextBilling,
+          }),
+        ),
       );
     } catch {
       syncKey.current = "";
@@ -220,10 +221,12 @@ export function CheckoutPage() {
           phone: shipping.phone || billing.phone,
         }
       : billing;
-    const next = await updateCustomerAction({
-      shipping,
-      billing: nextBilling,
-    });
+    const next = unwrapCart(
+      await updateCustomerAction({
+        shipping,
+        billing: nextBilling,
+      }),
+    );
     setCart(next);
     return next;
   }
@@ -243,13 +246,15 @@ export function CheckoutPage() {
         setSubmitting(false);
         return;
       }
-      const nextSession = await createCheckoutSessionAction({
-        shipping,
-        billing: same ? { ...shipping, email: shipping.email } : billing,
-        billingSameAsShipping: same,
-        paymentKind: paymentKind || undefined,
-        customerNote: buildCustomerNote(isGift, sellerNote),
-      });
+      const nextSession = unwrapResult(
+        await createCheckoutSessionAction({
+          shipping,
+          billing: same ? { ...shipping, email: shipping.email } : billing,
+          billingSameAsShipping: same,
+          paymentKind: paymentKind || undefined,
+          customerNote: buildCustomerNote(isGift, sellerNote),
+        }),
+      );
       setCart(nextSession.cart);
       setSession(nextSession);
     } catch (error) {
@@ -266,7 +271,7 @@ export function CheckoutPage() {
 
   async function chooseRate(packageId: number, rateId: string) {
     try {
-      setCart(await selectShippingRateAction({ packageId, rateId }));
+      setCart(unwrapCart(await selectShippingRateAction({ packageId, rateId })));
       setSession(null);
     } catch (error) {
       setErrors({
@@ -961,7 +966,7 @@ function OrderSummary({ cart }: { cart: StoreCart }) {
     if (!coupon.trim()) return;
     setCouponBusy(true);
     try {
-      const next = await applyCouponAction(coupon);
+      const next = unwrapCart(await applyCouponAction(coupon));
       setCart(next);
       toast({ title: "Coupon applied", description: coupon.trim() });
       setCoupon("");
@@ -979,7 +984,7 @@ function OrderSummary({ cart }: { cart: StoreCart }) {
   async function removeCoupon(code: string) {
     setCouponBusy(true);
     try {
-      setCart(await removeCouponAction(code));
+      setCart(unwrapCart(await removeCouponAction(code)));
       toast({ title: "Coupon removed", description: code });
     } catch (error) {
       toast({
@@ -995,7 +1000,7 @@ function OrderSummary({ cart }: { cart: StoreCart }) {
   async function changeQty(key: string, quantity: number) {
     setQtyBusy(key);
     try {
-      setCart(await updateCartItemAction({ key, quantity }));
+      setCart(unwrapCart(await updateCartItemAction({ key, quantity })));
     } catch (error) {
       toast({
         title: "Could not update quantity",
@@ -1010,7 +1015,7 @@ function OrderSummary({ cart }: { cart: StoreCart }) {
   async function removeItem(key: string, name: string) {
     setQtyBusy(key);
     try {
-      setCart(await removeCartItemAction(key));
+      setCart(unwrapCart(await removeCartItemAction(key)));
       toast({ title: "Removed from cart", description: name });
     } catch (error) {
       toast({

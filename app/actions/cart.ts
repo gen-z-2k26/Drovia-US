@@ -13,10 +13,11 @@ import {
   updateStoreCartItem,
   updateStoreCustomer,
 } from "@/lib/api/store-api";
+import { cartErrorMessage, type CartMutation } from "@/lib/cart-result";
 import type { Address, StoreCart } from "@/lib/types";
 
-function actionError(error: unknown) {
-  return error instanceof Error ? error.message : "The cart could not be updated.";
+function failedCart(error: unknown, fallback: string): CartMutation {
+  return { ok: false, message: cartErrorMessage(error, fallback) };
 }
 
 export async function getCartAction(): Promise<StoreCart> {
@@ -31,12 +32,12 @@ export async function getCartAction(): Promise<StoreCart> {
 export async function addItemToCartAction(input: {
   id: number;
   quantity?: number;
-}): Promise<StoreCart> {
+}): Promise<CartMutation> {
   const quantity = Math.max(1, Number(input.quantity) || 1);
   try {
-    return await addStoreCartItem({ id: input.id, quantity });
+    return { ok: true, cart: await addStoreCartItem({ id: input.id, quantity }) };
   } catch (error) {
-    throw new Error(actionError(error));
+    return failedCart(error, "Could not add that product to the cart.");
   }
 }
 
@@ -44,73 +45,76 @@ export async function shopNowAction(input: {
   id: number;
   quantity?: number;
   emptyCart?: boolean;
-}): Promise<StoreCart> {
+}): Promise<CartMutation> {
   const quantity = Math.max(1, Number(input.quantity) || 1);
   try {
     if (input.emptyCart) {
       await clearStoreCart();
     }
-    return await addStoreCartItem({ id: input.id, quantity });
+    return { ok: true, cart: await addStoreCartItem({ id: input.id, quantity }) };
   } catch (error) {
-    throw new Error(actionError(error));
+    return failedCart(error, "Could not start checkout.");
   }
 }
 
 export async function updateCartItemAction(input: {
   key: string;
   quantity: number;
-}): Promise<StoreCart> {
+}): Promise<CartMutation> {
   try {
-    if (input.quantity <= 0) return await removeStoreCartItem(input.key);
-    return await updateStoreCartItem(input);
+    const cart =
+      input.quantity <= 0
+        ? await removeStoreCartItem(input.key)
+        : await updateStoreCartItem(input);
+    return { ok: true, cart };
   } catch (error) {
-    throw new Error(actionError(error));
+    return failedCart(error, "Could not update quantity.");
   }
 }
 
-export async function removeCartItemAction(key: string): Promise<StoreCart> {
+export async function removeCartItemAction(key: string): Promise<CartMutation> {
   try {
-    return await removeStoreCartItem(key);
+    return { ok: true, cart: await removeStoreCartItem(key) };
   } catch (error) {
-    throw new Error(actionError(error));
+    return failedCart(error, "Could not remove that item.");
   }
 }
 
-export async function applyCouponAction(code: string): Promise<StoreCart> {
+export async function applyCouponAction(code: string): Promise<CartMutation> {
   try {
-    return await applyStoreCoupon(code.trim());
+    return { ok: true, cart: await applyStoreCoupon(code.trim()) };
   } catch (error) {
-    throw new Error(actionError(error));
+    return failedCart(error, "Coupon could not be applied.");
   }
 }
 
-export async function removeCouponAction(code: string): Promise<StoreCart> {
+export async function removeCouponAction(code: string): Promise<CartMutation> {
   try {
-    return await removeStoreCoupon(code);
+    return { ok: true, cart: await removeStoreCoupon(code) };
   } catch (error) {
-    throw new Error(actionError(error));
+    return failedCart(error, "Coupon could not be removed.");
   }
 }
 
 export async function updateCustomerAction(input: {
   shipping: Address;
   billing: Address;
-}): Promise<StoreCart> {
+}): Promise<CartMutation> {
   try {
-    return await updateStoreCustomer(input);
+    return { ok: true, cart: await updateStoreCustomer(input) };
   } catch (error) {
-    throw new Error(actionError(error));
+    return failedCart(error, "Could not update the delivery details.");
   }
 }
 
 export async function selectShippingRateAction(input: {
   packageId: number;
   rateId: string;
-}): Promise<StoreCart> {
+}): Promise<CartMutation> {
   try {
-    return await selectStoreShippingRate(input);
+    return { ok: true, cart: await selectStoreShippingRate(input) };
   } catch (error) {
-    throw new Error(actionError(error));
+    return failedCart(error, "Could not select shipping.");
   }
 }
 

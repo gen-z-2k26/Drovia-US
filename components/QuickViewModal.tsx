@@ -13,6 +13,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { ProductImageCarousel } from "@/components/ProductImageCarousel";
 import { QuantityPicker } from "@/components/QuantityPicker";
 import { addProductToCart } from "@/lib/add-to-cart";
+import { userErrorMessage } from "@/lib/user-error";
 import { useCartStore } from "@/lib/cart-store";
 import { useStore } from "@/lib/store-context";
 import { formatPrice } from "@/lib/format";
@@ -56,7 +57,7 @@ export function QuickViewModal({
       setAdded(true);
       window.setTimeout(() => setAdded(false), 1200);
     } catch (error) {
-      setError(error instanceof Error ? error.message : "Could not add to cart.");
+      setError(userErrorMessage(error, "Could not add to cart."));
     } finally {
       setBusy(false);
     }

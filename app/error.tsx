@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { pageContainer } from "@/lib/layout";
+import { userErrorMessage } from "@/lib/user-error";
 
 function userFacingMessage(error: Error) {
   const raw = error.message || "";
@@ -12,7 +13,7 @@ function userFacingMessage(error: Error) {
   if (/woocommerce|store server|unreachable|ECONNABORTED|timeout/i.test(raw)) {
     return "The catalog is taking too long to load. Try again in a moment.";
   }
-  return "Something went wrong on this page. Try again, or go back home.";
+  return userErrorMessage(error, "Something went wrong on this page. Try again, or go back home.");
 }
 
 export default function ErrorPage({

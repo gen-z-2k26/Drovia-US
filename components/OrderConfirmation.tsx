@@ -17,6 +17,7 @@ import { StoreImage } from "@/components/StoreImage";
 import type { Address, GuestOrder } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast-store";
+import { unwrapResult } from "@/lib/cart-result";
 import { userErrorMessage } from "@/lib/user-error";
 
 function formatAddress(address: Address) {
@@ -79,12 +80,14 @@ export function OrderConfirmation({
           paymentIntentId &&
           (afterpayOk || redirectStatus === "succeeded" || !redirectStatus)
         ) {
-          const paid = await completeCheckoutAction({
-            orderId,
-            orderKey,
-            paymentIntentId,
-            provider: afterpayOk ? "afterpay" : provider,
-          });
+          const paid = unwrapResult(
+            await completeCheckoutAction({
+              orderId,
+              orderKey,
+              paymentIntentId,
+              provider: afterpayOk ? "afterpay" : provider,
+            }),
+          );
           if (cancelled) return;
           setCart(emptyStoreCart());
           toast({
@@ -96,7 +99,9 @@ export function OrderConfirmation({
                 orderId: paid.orderId,
                 orderKey: paid.orderKey || orderKey,
                 email: paid.email,
-              }).catch(() => null)
+              })
+                .then(unwrapResult)
+                .catch(() => null)
             : null;
           if (cancelled) return;
           if (guest) {
@@ -139,11 +144,13 @@ export function OrderConfirmation({
           return;
         }
         if (orderKey && email) {
-          const guest = await lookupGuestOrderAction({
-            orderId,
-            orderKey,
-            email,
-          });
+          const guest = unwrapResult(
+            await lookupGuestOrderAction({
+              orderId,
+              orderKey,
+              email,
+            }),
+          );
           if (!cancelled) setOrder(guest);
           return;
         }
@@ -171,11 +178,13 @@ export function OrderConfirmation({
     setError("");
     try {
       setOrder(
-        await lookupGuestOrderAction({
-          orderId,
-          orderKey: lookupKey,
-          email: lookupEmail,
-        }),
+        unwrapResult(
+          await lookupGuestOrderAction({
+            orderId,
+            orderKey: lookupKey,
+            email: lookupEmail,
+          }),
+        ),
       );
     } catch (err) {
       setError(

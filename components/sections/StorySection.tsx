@@ -1,20 +1,14 @@
 import Link from "next/link";
+import Image from "next/image";
 import type { StoreSettings } from "@/lib/types";
 import { Reveal, RevealImage } from "@/components/sections/Reveal";
-import { StoreImage } from "@/components/StoreImage";
 import { buttonVariants } from "@/components/ui/button";
 import { pageContainer, sectionYClass } from "@/lib/layout";
 import { cn } from "@/lib/utils";
 
-export function StorySection({
-  settings,
-  image,
-  imageAlt,
-}: {
-  settings: StoreSettings;
-  image?: string;
-  imageAlt?: string;
-}) {
+const ABOUT_IMAGE = "/brand/about-showcase.jpg";
+
+export function StorySection({ settings }: { settings: StoreSettings }) {
   return (
     <section
       aria-labelledby="story-heading"
@@ -59,12 +53,14 @@ export function StorySection({
           </div>
         </Reveal>
 
-        <RevealImage className="relative aspect-[var(--media-story)] overflow-hidden rounded-2xl border border-border shadow-md">
-          <StoreImage
-            src={image || settings.logo}
-            alt={imageAlt || `${settings.name} product`}
-            fallbackSrc={settings.logo}
-            sizes="(max-width: 1024px) 100vw, 50vw"
+        <RevealImage className="overflow-hidden rounded-2xl border border-border shadow-md">
+          <Image
+            src={ABOUT_IMAGE}
+            alt="Headphones, a laptop, a monitor, and a controller on a lit platform."
+            width={1024}
+            height={512}
+            unoptimized
+            className="h-auto w-full"
           />
         </RevealImage>
       </div>

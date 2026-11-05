@@ -11,6 +11,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { completeCheckoutAction } from "@/app/actions/checkout";
+import { unwrapResult } from "@/lib/cart-result";
+import { userErrorMessage } from "@/lib/user-error";
 import { formatPrice } from "@/lib/format";
 import { useStore } from "@/lib/store-context";
 import { getStripeJs } from "@/lib/stripe-browser";
@@ -93,18 +95,16 @@ function MockPaymentForm({
     event.preventDefault();
     setSubmitting(true);
     try {
-      const result = await completeCheckoutAction({
-        orderId,
-        orderKey,
-        paymentIntentId: clientSecret,
-      });
+      const result = unwrapResult(
+        await completeCheckoutAction({
+          orderId,
+          orderKey,
+          paymentIntentId: clientSecret,
+        }),
+      );
       onPaid(result);
     } catch (submitError) {
-      const message =
-        submitError instanceof Error
-          ? submitError.message
-          : "Could not complete the development checkout.";
-      onError(message);
+      onError(userErrorMessage(submitError, "Could not complete the development checkout."));
     } finally {
       setSubmitting(false);
     }
@@ -170,11 +170,13 @@ function StripePaymentForm({
       }
 
       if (paymentIntent?.status === "succeeded") {
-        const result = await completeCheckoutAction({
-          orderId,
-          orderKey,
-          paymentIntentId: paymentIntent.id,
-        });
+        const result = unwrapResult(
+          await completeCheckoutAction({
+            orderId,
+            orderKey,
+            paymentIntentId: paymentIntent.id,
+          }),
+        );
         onPaid(result);
         return;
       }
@@ -186,11 +188,7 @@ function StripePaymentForm({
 
       onError("Payment was not completed. Try again.");
     } catch (submitError) {
-      onError(
-        submitError instanceof Error
-          ? submitError.message
-          : "Payment could not be completed.",
-      );
+      onError(userErrorMessage(submitError, "Payment could not be completed."));
     } finally {
       setSubmitting(false);
     }
@@ -278,13 +276,19 @@ function PayPalPayment({
         .Buttons({
           createOrder: () => Promise.resolve(clientSecret),
           onApprove: async () => {
-            const result = await completeCheckoutAction({
-              orderId,
-              orderKey,
-              paymentIntentId: clientSecret,
-              provider: "paypal",
-            });
-            onPaidRef.current(result);
+            try {
+              const result = unwrapResult(
+                await completeCheckoutAction({
+                  orderId,
+                  orderKey,
+                  paymentIntentId: clientSecret,
+                  provider: "paypal",
+                }),
+              );
+              onPaidRef.current(result);
+            } catch (error) {
+              onErrorRef.current(userErrorMessage(error, "PayPal could not be completed."));
+            }
           },
           onCancel: () => {
             onErrorRef.current("PayPal payment was cancelled.");
@@ -483,9 +487,10 @@ function AffirmPayment({
             paymentIntentId: token,
             provider: "affirm",
           })
+            .then(unwrapResult)
             .then(onPaid)
             .catch((error: unknown) => {
-              onError(error instanceof Error ? error.message : "Affirm payment failed.");
+              onError(userErrorMessage(error, "Affirm payment failed."));
             })
             .finally(() => setSubmitting(false));
         },
@@ -495,7 +500,7 @@ function AffirmPayment({
         },
       });
     } catch (error) {
-      onError(error instanceof Error ? error.message : "Affirm could not be started.");
+      onError(userErrorMessage(error, "Affirm could not be started."));
       setSubmitting(false);
     }
   }

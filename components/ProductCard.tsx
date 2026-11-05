@@ -7,6 +7,7 @@ import type { Product } from "@/lib/types";
 import { formatPrice } from "@/lib/format";
 import { useStore } from "@/lib/store-context";
 import { addProductToCart } from "@/lib/add-to-cart";
+import { userErrorMessage } from "@/lib/user-error";
 import { useCartStore } from "@/lib/cart-store";
 import { useMotionEnabled } from "@/lib/use-motion-enabled";
 import { hoverLiftClass } from "@/lib/motion";
@@ -34,7 +35,7 @@ export function ProductCard({ product }: { product: Product }) {
       setAdded(true);
       window.setTimeout(() => setAdded(false), 1400);
     } catch (error) {
-      setError(error instanceof Error ? error.message : "Could not add to cart.");
+      setError(userErrorMessage(error, "Could not add to cart."));
     } finally {
       setBusy(false);
     }

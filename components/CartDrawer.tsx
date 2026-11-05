@@ -19,6 +19,8 @@ import { useStore } from "@/lib/store-context";
 import { formatPrice } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { applyCouponAction, removeCouponAction } from "@/app/actions/cart";
+import { unwrapCart } from "@/lib/cart-result";
+import { userErrorMessage } from "@/lib/user-error";
 import { toast } from "@/lib/toast-store";
 
 export function CartDrawer() {
@@ -38,12 +40,12 @@ export function CartDrawer() {
     if (!coupon.trim()) return;
     setCouponBusy(true);
     try {
-      const next = await applyCouponAction(coupon);
+      const next = unwrapCart(await applyCouponAction(coupon));
       setCart(next);
       toast({ title: "Coupon applied", description: coupon.trim() });
       setCoupon("");
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Coupon could not be applied.";
+      const message = userErrorMessage(err, "Coupon could not be applied.");
       setError(message);
       toast({ title: "Coupon could not be applied", description: message, variant: "error" });
     } finally {
@@ -54,10 +56,10 @@ export function CartDrawer() {
   async function removeCoupon(code: string) {
     setCouponBusy(true);
     try {
-      setCart(await removeCouponAction(code));
+      setCart(unwrapCart(await removeCouponAction(code)));
       toast({ title: "Coupon removed", description: code });
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Coupon could not be removed.";
+      const message = userErrorMessage(err, "Coupon could not be removed.");
       setError(message);
       toast({ title: "Coupon could not be removed", description: message, variant: "error" });
     } finally {

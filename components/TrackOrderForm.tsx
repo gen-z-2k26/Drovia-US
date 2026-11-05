@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { StoreImage } from "@/components/StoreImage";
 import type { GuestOrder } from "@/lib/types";
+import { unwrapResult } from "@/lib/cart-result";
 import { userErrorMessage } from "@/lib/user-error";
 
 function statusLabel(order: GuestOrder) {
@@ -43,6 +44,7 @@ export function TrackOrderForm({
       orderKey: initialOrderKey,
       email: initialEmail,
     })
+      .then(unwrapResult)
       .then((found) => {
         if (cancelled) return;
         setOrder(found);
@@ -70,11 +72,13 @@ export function TrackOrderForm({
     setError("");
     setOrder(null);
     try {
-      const found = await lookupGuestOrderAction({
-        orderId,
-        orderKey,
-        email,
-      });
+      const found = unwrapResult(
+        await lookupGuestOrderAction({
+          orderId,
+          orderKey,
+          email,
+        }),
+      );
       setOrder(found);
     } catch (err) {
       setError(

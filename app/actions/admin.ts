@@ -1,7 +1,8 @@
 "use server";
 
 import { headers } from "next/headers";
-import { redirect } from "next/navigation";
+import { redirect, unstable_rethrow } from "next/navigation";
+import { cartErrorMessage, publicError, type PublicResult } from "@/lib/cart-result";
 import { pingAffirm } from "@/lib/affirm";
 import { pingAfterpay } from "@/lib/afterpay";
 import {
@@ -16,6 +17,7 @@ import {
   clearProviderSecrets,
   getAdminPaymentView,
   savePaymentSettings,
+  type AdminPaymentView,
   type PaymentMode,
   type PaymentProviderId,
   type PaymentSettingsInput,
@@ -44,16 +46,24 @@ function allow(key: string) {
   return true;
 }
 
-export async function loginAdminAction(password: string) {
-  const headerList = await headers();
-  if (!allow(clientKey(headerList))) {
-    throw new Error("Too many attempts. Wait a minute and try again.");
+export async function loginAdminAction(password: string): Promise<PublicResult<true>> {
+  try {
+    const headerList = await headers();
+    if (!allow(clientKey(headerList))) {
+      return publicError(
+        new Error("Too many attempts. Wait a minute and try again."),
+        "Invalid credentials.",
+      );
+    }
+    if (!adminAuthReady() || !adminPasswordMatches(password)) {
+      return publicError(new Error("Invalid credentials."), "Invalid credentials.");
+    }
+    await createAdminSession();
+    redirect("/admin");
+  } catch (error) {
+    unstable_rethrow(error);
+    return publicError(error, "Invalid credentials.");
   }
-  if (!adminAuthReady() || !adminPasswordMatches(password)) {
-    throw new Error("Invalid credentials.");
-  }
-  await createAdminSession();
-  redirect("/admin");
 }
 
 export async function logoutAdminAction() {
@@ -61,16 +71,30 @@ export async function logoutAdminAction() {
   redirect("/admin/login");
 }
 
-export async function savePaymentSettingsAction(input: PaymentSettingsInput) {
-  await requireAdmin();
-  await savePaymentSettings(input);
-  return getAdminPaymentView();
+export async function savePaymentSettingsAction(
+  input: PaymentSettingsInput,
+): Promise<PublicResult<AdminPaymentView>> {
+  try {
+    await requireAdmin();
+    await savePaymentSettings(input);
+    return { ok: true, data: await getAdminPaymentView() };
+  } catch (error) {
+    unstable_rethrow(error);
+    return publicError(error, "Could not save.");
+  }
 }
 
-export async function clearProviderAction(provider: PaymentProviderId) {
-  await requireAdmin();
-  await clearProviderSecrets(provider);
-  return getAdminPaymentView();
+export async function clearProviderAction(
+  provider: PaymentProviderId,
+): Promise<PublicResult<AdminPaymentView>> {
+  try {
+    await requireAdmin();
+    await clearProviderSecrets(provider);
+    return { ok: true, data: await getAdminPaymentView() };
+  } catch (error) {
+    unstable_rethrow(error);
+    return publicError(error, "Could not clear credentials.");
+  }
 }
 
 export type PaymentConnectionDraft = {
@@ -84,8 +108,8 @@ export async function testProviderAction(
   provider: PaymentProviderId,
   draft?: PaymentConnectionDraft,
 ) {
-  await requireAdmin();
   try {
+    await requireAdmin();
     if (provider === "stripe") {
       await pingStripe(draft?.stripe?.secretKey);
     } else if (provider === "paypal") {
@@ -97,10 +121,10 @@ export async function testProviderAction(
     }
     return { ok: true as const, message: "Connection succeeded." };
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Connection failed.";
+    unstable_rethrow(error);
     return {
       ok: false as const,
-      message: message === "Add the keys first." ? message : message,
+      message: cartErrorMessage(error, "Connection failed."),
     };
   }
 }

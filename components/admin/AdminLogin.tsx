@@ -2,6 +2,8 @@
 
 import { useState, type FormEvent } from "react";
 import { loginAdminAction } from "@/app/actions/admin";
+import { unwrapResult } from "@/lib/cart-result";
+import { userErrorMessage } from "@/lib/user-error";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,16 +24,14 @@ export function AdminLogin({
     setPending(true);
     setError("");
     try {
-      await loginAdminAction(password);
+      unwrapResult(await loginAdminAction(password));
     } catch (submitError) {
       const digest =
         typeof submitError === "object" && submitError && "digest" in submitError
           ? String((submitError as { digest?: unknown }).digest)
           : "";
       if (digest.includes("NEXT_REDIRECT")) throw submitError;
-      const message =
-        submitError instanceof Error ? submitError.message : "Invalid credentials.";
-      setError(message.includes("Too many") ? message : "Invalid credentials.");
+      setError(userErrorMessage(submitError, "Invalid credentials."));
       setPending(false);
     }
   }
