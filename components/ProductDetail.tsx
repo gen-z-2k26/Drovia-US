@@ -389,21 +389,6 @@ export function ProductDetail({
               </dd>
             </div>
           ) : null}
-          {(product.tags ?? []).length > 0 ? (
-            <div className="flex flex-wrap items-start gap-2">
-              <dt className="pt-1 font-semibold text-foreground">Tags:</dt>
-              <dd className="flex flex-wrap gap-2">
-                {product.tags.map((tag) => (
-                  <span
-                    key={tag.id}
-                    className="rounded-full border border-border px-2.5 py-1 text-xs text-foreground"
-                  >
-                    {tag.name}
-                  </span>
-                ))}
-              </dd>
-            </div>
-          ) : null}
         </dl>
       </section>
 
