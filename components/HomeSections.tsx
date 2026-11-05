@@ -30,6 +30,7 @@ export function HomeSections({
       <CatalogRailSection categories={categories} products={products} />
       <TrustStripSection />
       <CategoriesSection settings={settings} categories={categories} />
+      <StepsSection />
       <FeaturedProductsSection groups={categoryProducts} products={products} />
       <StorySection
         settings={settings}
@@ -39,7 +40,6 @@ export function HomeSections({
           products.find((product) => product.images[0])?.name
         }
       />
-      <StepsSection />
       <TrustSection />
       <NewsletterSection settings={settings} />
     </div>
