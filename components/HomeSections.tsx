@@ -32,14 +32,7 @@ export function HomeSections({
       <CategoriesSection settings={settings} categories={categories} />
       <StepsSection />
       <FeaturedProductsSection groups={categoryProducts} products={products} />
-      <StorySection
-        settings={settings}
-        image={products.find((product) => product.images[0])?.images[0]}
-        imageAlt={
-          products.find((product) => product.images[0])?.imageAlts[0] ||
-          products.find((product) => product.images[0])?.name
-        }
-      />
+      <StorySection settings={settings} />
       <TrustSection />
       <NewsletterSection settings={settings} />
     </div>

@@ -32,6 +32,7 @@ import {
   toStripeAmount,
 } from "@/lib/stripe";
 import { stripeShippingParams } from "@/lib/stripe-address";
+import { publicError, type PublicResult } from "@/lib/cart-result";
 import type {
   Address,
   CheckoutDetails,
@@ -44,14 +45,7 @@ import type {
   StoreCart,
 } from "@/lib/types";
 
-async function requireStripe() {
-  if (!(await isStripeConfigured())) {
-    throw new Error("Stripe is not configured. Add a secret key in Admin.");
-  }
-  return getStripe();
-}
-
-export async function getCheckoutOptionsAction(): Promise<{
+type CheckoutOptions = {
   cart: StoreCart;
   countries: CountryOption[];
   defaultCountry: string;
@@ -61,7 +55,16 @@ export async function getCheckoutOptionsAction(): Promise<{
   paypalClientId: string;
   affirmPublicKey: string;
   affirmEnv: "sandbox" | "live";
-}> {
+};
+
+async function requireStripe() {
+  if (!(await isStripeConfigured())) {
+    throw new Error("Stripe is not configured. Add a secret key in Admin.");
+  }
+  return getStripe();
+}
+
+async function loadCheckoutOptions(): Promise<CheckoutOptions> {
   const [cart, countries, defaultCountry, paymentMethods, accounts] = await Promise.all([
     getStoreCart(),
     getCountries(),
@@ -81,6 +84,14 @@ export async function getCheckoutOptionsAction(): Promise<{
     affirmPublicKey: publicConfig.affirmPublicKey,
     affirmEnv: publicConfig.affirmEnv,
   };
+}
+
+export async function getCheckoutOptionsAction(): Promise<PublicResult<CheckoutOptions>> {
+  try {
+    return { ok: true, data: await loadCheckoutOptions() };
+  } catch (error) {
+    return publicError(error, "Could not load checkout.");
+  }
 }
 
 async function abandonPendingIfStale(cartHash: string) {
@@ -163,7 +174,7 @@ async function createCardPaymentIntent(input: {
   });
 }
 
-export async function createCheckoutSessionAction(
+async function createCheckoutSession(
   details: CheckoutDetails,
 ): Promise<CheckoutSessionResult> {
   const mockPayment = isMockPaymentEnabled();
@@ -275,6 +286,16 @@ export async function createCheckoutSessionAction(
     billing,
     cart,
   });
+}
+
+export async function createCheckoutSessionAction(
+  details: CheckoutDetails,
+): Promise<PublicResult<CheckoutSessionResult>> {
+  try {
+    return { ok: true, data: await createCheckoutSession(details) };
+  } catch (error) {
+    return publicError(error, "Could not start checkout.");
+  }
 }
 
 async function beginProviderPayment(input: {
@@ -396,7 +417,7 @@ async function finishPaid(
   return { ...paid, orderKey: paid.orderKey || orderKey || "" };
 }
 
-export async function completeCheckoutAction(
+async function completeCheckout(
   payload: CompleteCheckoutPayload,
 ): Promise<CreateOrderResult> {
   const orderId = payload.orderId.trim();
@@ -512,4 +533,14 @@ export async function completeCheckoutAction(
   }
 
   return finishPaid(orderId, orderKey, intent.id, "stripe");
+}
+
+export async function completeCheckoutAction(
+  payload: CompleteCheckoutPayload,
+): Promise<PublicResult<CreateOrderResult>> {
+  try {
+    return { ok: true, data: await completeCheckout(payload) };
+  } catch (error) {
+    return publicError(error, "Payment could not be completed.");
+  }
 }

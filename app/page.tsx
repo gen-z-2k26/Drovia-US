@@ -5,7 +5,7 @@ import {
   getProductsByCategory,
   getSiteSettings,
   getSiteUrl,
-  getTopCategories,
+  getHomeCategories,
 } from "@/lib/api";
 import { toCardProduct } from "@/lib/catalog-card";
 import { defaultPages } from "@/lib/types";
@@ -45,7 +45,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function HomePage() {
   const settings = await getSiteSettings();
-  const categories = await getTopCategories(3);
+  const categories = await getHomeCategories(3);
   const groups = await Promise.all(
     categories.map(async (category) => {
       const products = (await getProductsByCategory(category.slug)).slice(0, 3);

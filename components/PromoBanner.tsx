@@ -4,10 +4,12 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import { applyCouponAction } from "@/app/actions/cart";
+import { unwrapCart } from "@/lib/cart-result";
 import { useCartStore } from "@/lib/cart-store";
 import { useStore } from "@/lib/store-context";
 import { pageContainer } from "@/lib/layout";
 import { toast } from "@/lib/toast-store";
+import { userErrorMessage } from "@/lib/user-error";
 
 function dismissKey(id: string) {
   return `promo-dismissed:${id}`;
@@ -43,11 +45,11 @@ export function PromoBanner() {
     if (!coupon || busy) return;
     setBusy(true);
     try {
-      setCart(await applyCouponAction(coupon), { open: true });
+      setCart(unwrapCart(await applyCouponAction(coupon)), { open: true });
       toast({ title: "Offer applied", description: coupon });
       openCart();
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Could not apply the offer.";
+      const message = userErrorMessage(error, "Could not apply the offer.");
       setError(message);
       toast({ title: "Could not apply the offer", description: message, variant: "error" });
       openCart();

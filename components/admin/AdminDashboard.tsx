@@ -9,6 +9,8 @@ import {
   savePaymentSettingsAction,
   testProviderAction,
 } from "@/app/actions/admin";
+import { unwrapResult } from "@/lib/cart-result";
+import { userErrorMessage } from "@/lib/user-error";
 import { Button } from "@/components/ui/button";
 import type {
   AdminPaymentView,
@@ -53,12 +55,12 @@ export function AdminDashboard({
     setError("");
     setMessage("");
     try {
-      const next = await savePaymentSettingsAction(form);
+      const next = unwrapResult(await savePaymentSettingsAction(form));
       setView(next);
       setForm(formFromView(next));
       setMessage("Payment accounts saved.");
     } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : "Could not save.");
+      setError(userErrorMessage(saveError, "Could not save."));
     } finally {
       setPending("");
     }
@@ -69,12 +71,12 @@ export function AdminDashboard({
     setError("");
     setMessage("");
     try {
-      const next = await clearProviderAction(provider);
+      const next = unwrapResult(await clearProviderAction(provider));
       setView(next);
       setForm(formFromView(next));
       setMessage("Credentials cleared.");
     } catch (clearError) {
-      setError(clearError instanceof Error ? clearError.message : "Could not clear credentials.");
+      setError(userErrorMessage(clearError, "Could not clear credentials."));
     } finally {
       setPending("");
     }
@@ -109,7 +111,7 @@ export function AdminDashboard({
         ...current,
         [provider]: {
           ok: false,
-          message: testError instanceof Error ? testError.message : "Connection failed.",
+          message: userErrorMessage(testError, "Connection failed."),
         },
       }));
     } finally {

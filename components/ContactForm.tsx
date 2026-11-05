@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/lib/toast-store";
+import { unwrapResult } from "@/lib/cart-result";
 import { userErrorMessage } from "@/lib/user-error";
 import { cn } from "@/lib/utils";
 
@@ -23,14 +24,16 @@ export function ContactForm() {
     setSending(true);
     setError("");
     try {
-      const result = await submitContactAction({
-        name: String(data.get("name") || ""),
-        email: String(data.get("email") || ""),
-        phone: String(data.get("phone") || ""),
-        orderNumber: String(data.get("orderNumber") || ""),
-        subject: String(data.get("subject") || ""),
-        message: String(data.get("message") || ""),
-      });
+      const result = unwrapResult(
+        await submitContactAction({
+          name: String(data.get("name") || ""),
+          email: String(data.get("email") || ""),
+          phone: String(data.get("phone") || ""),
+          orderNumber: String(data.get("orderNumber") || ""),
+          subject: String(data.get("subject") || ""),
+          message: String(data.get("message") || ""),
+        }),
+      );
       form.reset();
       toast({
         title: "Message sent",

@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { getCartAction, migrateLegacyCartAction } from "@/app/actions/cart";
 import { useCartStore } from "@/lib/cart-store";
+import { userErrorMessage } from "@/lib/user-error";
 
 type LegacyPersist = {
   state?: { items?: Array<{ productId?: string; quantity?: number }> };
@@ -44,7 +45,7 @@ export function CartHydrator() {
       } catch (error) {
         if (!cancelled) {
           setError(
-            error instanceof Error ? error.message : "Could not load your cart.",
+            userErrorMessage(error, "Could not load your cart."),
           );
         }
       } finally {

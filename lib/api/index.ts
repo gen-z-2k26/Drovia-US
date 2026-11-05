@@ -466,15 +466,45 @@ export async function getCategoryRecords(): Promise<Category[]> {
   });
 }
 
-export async function getTopCategories(limit = 6): Promise<Category[]> {
-  const all = await getCategoryRecords();
+function parentCategories(all: Category[]): Category[] {
   return all
     .filter(
       (category) =>
         category.parent === 0 && category.slug.toLowerCase() !== "uncategorized",
     )
-    .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
-    .slice(0, limit);
+    .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+}
+
+export async function getTopCategories(limit = 6): Promise<Category[]> {
+  const all = await getCategoryRecords();
+  return parentCategories(all).slice(0, limit);
+}
+
+/** Homepage catalog slots. Marine Electronics is replaced by 3D Printers. */
+const HOME_CATEGORY_REPLACEMENTS: Record<string, string> = {
+  "marine-electronics": "3d-printers",
+};
+
+export async function getHomeCategories(limit = 3): Promise<Category[]> {
+  const parents = parentCategories(await getCategoryRecords());
+  const bySlug = new Map(
+    parents.map((category) => [category.slug.toLowerCase(), category]),
+  );
+  const picked: Category[] = [];
+  const used = new Set<string>();
+
+  for (const category of parents) {
+    if (picked.length >= limit) break;
+    const replacement =
+      bySlug.get(HOME_CATEGORY_REPLACEMENTS[category.slug.toLowerCase()] ?? "");
+    const next = replacement ?? category;
+    const slug = next.slug.toLowerCase();
+    if (used.has(slug)) continue;
+    used.add(slug);
+    picked.push(next);
+  }
+
+  return picked;
 }
 
 export async function getCategories(): Promise<string[]> {

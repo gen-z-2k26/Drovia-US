@@ -13,6 +13,7 @@ import { defaultProductPage } from "@/lib/types";
 import { formatPrice } from "@/lib/format";
 import { useStore } from "@/lib/store-context";
 import { addProductToCart, shopNowToCheckout } from "@/lib/add-to-cart";
+import { userErrorMessage } from "@/lib/user-error";
 import { useCartStore } from "@/lib/cart-store";
 import { ProductRatingRow } from "@/components/ProductRatingRow";
 import { SecurePaymentsBlock } from "@/components/SecurePaymentsBlock";
@@ -57,7 +58,7 @@ export function ProductDetail({
       setAdded(true);
       window.setTimeout(() => setAdded(false), 1200);
     } catch (error) {
-      setError(error instanceof Error ? error.message : "Could not add to cart.");
+      setError(userErrorMessage(error, "Could not add to cart."));
     } finally {
       setBusy(false);
     }
@@ -71,7 +72,7 @@ export function ProductDetail({
       router.push("/checkout");
     } catch (error) {
       setError(
-        error instanceof Error ? error.message : "Could not start checkout.",
+        userErrorMessage(error, "Could not start checkout."),
       );
     } finally {
       setBusy(false);

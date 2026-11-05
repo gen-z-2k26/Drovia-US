@@ -14,6 +14,8 @@ import {
   removeCartItemAction,
   updateCartItemAction,
 } from "@/app/actions/cart";
+import { unwrapCart } from "@/lib/cart-result";
+import { userErrorMessage } from "@/lib/user-error";
 import { toast } from "@/lib/toast-store";
 
 export function CartItemRow({ item }: { item: StoreCartItem }) {
@@ -25,10 +27,12 @@ export function CartItemRow({ item }: { item: StoreCartItem }) {
 
   async function changeQty(next: number) {
     try {
-      const cart = await updateCartItemAction({ key: item.key, quantity: next });
+      const cart = unwrapCart(
+        await updateCartItemAction({ key: item.key, quantity: next }),
+      );
       setCart(cart);
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Could not update quantity.";
+      const message = userErrorMessage(error, "Could not update quantity.");
       setError(message);
       toast({ title: "Could not update quantity", description: message, variant: "error" });
     }
@@ -36,11 +40,11 @@ export function CartItemRow({ item }: { item: StoreCartItem }) {
 
   async function remove() {
     try {
-      const cart = await removeCartItemAction(item.key);
+      const cart = unwrapCart(await removeCartItemAction(item.key));
       setCart(cart);
       toast({ title: "Removed from cart", description: item.name });
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Could not remove item.";
+      const message = userErrorMessage(error, "Could not remove item.");
       setError(message);
       toast({ title: "Could not remove item", description: message, variant: "error" });
     }

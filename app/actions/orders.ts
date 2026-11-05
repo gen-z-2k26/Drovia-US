@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import { getOrder, mapWooOrder } from "@/lib/api/orders";
 import { emptyAddress } from "@/lib/api/map-cart";
 import { getGuestStoreOrder } from "@/lib/api/store-api";
+import { publicError, type PublicResult } from "@/lib/cart-result";
 import type { GuestOrder } from "@/lib/types";
 
 const hits = new Map<string, { count: number; resetAt: number }>();
@@ -60,7 +61,7 @@ function statusText(value: unknown) {
   return "";
 }
 
-export async function lookupGuestOrderAction(input: {
+async function lookupGuestOrder(input: {
   orderId: string;
   orderKey: string;
   email: string;
@@ -141,5 +142,17 @@ export async function lookupGuestOrderAction(input: {
     } catch {
       throw new Error("Order not found.");
     }
+  }
+}
+
+export async function lookupGuestOrderAction(input: {
+  orderId: string;
+  orderKey: string;
+  email: string;
+}): Promise<PublicResult<GuestOrder>> {
+  try {
+    return { ok: true, data: await lookupGuestOrder(input) };
+  } catch (error) {
+    return publicError(error, "Order not found. Check the order number, order key, and email.");
   }
 }

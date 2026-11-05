@@ -1,4 +1,5 @@
 import axios, { type AxiosError } from "axios";
+import { plainStoreMessage } from "@/lib/cart-result";
 
 export class WooCommerceApiError extends Error {
   readonly status?: number;
@@ -14,7 +15,7 @@ export class WooCommerceApiError extends Error {
       cause?: unknown;
     },
   ) {
-    super(message, options?.cause ? { cause: options.cause } : undefined);
+    super(plainStoreMessage(message) || message, options?.cause ? { cause: options.cause } : undefined);
     this.name = "WooCommerceApiError";
     this.status = options?.status;
     this.code = options?.code;
