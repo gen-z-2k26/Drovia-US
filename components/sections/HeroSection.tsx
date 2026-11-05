@@ -23,7 +23,7 @@ export function HeroSection({ settings }: { settings: StoreSettings }) {
       <div
         className={pageContainer(
           "flex flex-col gap-3 py-4 sm:flex-row",
-          "lg:absolute lg:inset-x-0 lg:bottom-4 lg:py-0",
+          "lg:absolute lg:inset-x-0 lg:bottom-30 lg:py-0",
         )}
       >
         <Link
