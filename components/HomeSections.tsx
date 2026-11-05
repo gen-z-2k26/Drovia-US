@@ -17,10 +17,12 @@ export function HomeSections({
   settings,
   products,
   categories,
+  categoryProducts = [],
 }: {
   settings: StoreSettings;
   products: Product[];
   categories: Category[];
+  categoryProducts?: { category: Category; products: Product[] }[];
 }) {
   return (
     <div>
@@ -28,7 +30,7 @@ export function HomeSections({
       <CatalogRailSection categories={categories} products={products} />
       <TrustStripSection />
       <CategoriesSection settings={settings} categories={categories} />
-      <FeaturedProductsSection products={products} />
+      <FeaturedProductsSection groups={categoryProducts} products={products} />
       <StorySection
         settings={settings}
         image={products.find((product) => product.images[0])?.images[0]}

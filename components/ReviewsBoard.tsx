@@ -18,15 +18,6 @@ function initials(name: string) {
   return letters.join("") || "S";
 }
 
-function distribution(reviews: GenericReview[]) {
-  const counts = [0, 0, 0, 0, 0, 0];
-  for (const review of reviews) {
-    const star = Math.min(5, Math.max(1, Math.round(review.rating)));
-    counts[star] += 1;
-  }
-  return counts;
-}
-
 export function ReviewsBoard({
   reviews,
   locale,
@@ -37,7 +28,14 @@ export function ReviewsBoard({
   const [starFilter, setStarFilter] = useState<StarFilter>(0);
   const [sort, setSort] = useState<SortKey>("recent");
 
-  const counts = useMemo(() => distribution(reviews), [reviews]);
+  const counts = useMemo(() => {
+    const buckets = [0, 0, 0, 0, 0, 0];
+    for (const review of reviews) {
+      const star = Math.min(5, Math.max(1, Math.round(review.rating)));
+      buckets[star] += 1;
+    }
+    return buckets;
+  }, [reviews]);
   const total = reviews.length;
   const average =
     total > 0
@@ -75,7 +73,7 @@ export function ReviewsBoard({
             </p>
             <ReviewStars rating={average} size="lg" />
             <p className="text-sm text-muted-foreground">
-              {total} featured {total === 1 ? "note" : "notes"}
+              {total} reviews
             </p>
             <p className="text-sm font-medium">
               {recommend}% of shoppers recommend this store

@@ -8,6 +8,7 @@ import {
   getSiteSettings,
   getSiteUrl,
 } from "@/lib/api";
+import { toCardProduct } from "@/lib/catalog-card";
 import { pageContainer } from "@/lib/layout";
 
 export const revalidate = 60;
@@ -71,7 +72,7 @@ export default async function CollectionPage({ params }: CollectionPageProps) {
     notFound();
   }
 
-  const products = await getProductsByCategory(category.slug);
+  const products = (await getProductsByCategory(category.slug)).slice(0, 3);
   const siteUrl = getSiteUrl(settings);
   const url = siteUrl
     ? `${siteUrl}/collection/${category.slug}`
@@ -140,7 +141,7 @@ export default async function CollectionPage({ params }: CollectionPageProps) {
           </p>
         </header>
         <ProductsCatalog
-          products={products}
+          products={products.map(toCardProduct)}
           initialCategory={category.name}
         />
       </div>

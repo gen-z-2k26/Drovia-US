@@ -22,7 +22,7 @@ export type MarqueeRailItem = {
 export function MarqueeRail({
   items,
   label,
-  duration = 34,
+  duration = 72,
   className,
 }: {
   items: MarqueeRailItem[];

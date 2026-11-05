@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { pageContainer } from "@/lib/layout";
 import { getSiteSettings } from "@/lib/api";
-import { defaultProductPage } from "@/lib/types";
 import { PageHero } from "@/components/PageHero";
 import { ReviewsBoard } from "@/components/ReviewsBoard";
+import { storeReviews } from "@/lib/store-reviews";
 
 export const revalidate = 60;
 
@@ -15,10 +15,7 @@ export const metadata: Metadata = {
 
 export default async function ReviewsPage() {
   const settings = await getSiteSettings();
-  const reviews =
-    settings.productPage?.genericReviews?.length
-      ? settings.productPage.genericReviews
-      : defaultProductPage.genericReviews;
+  const reviews = storeReviews();
 
   return (
     <div className={pageContainer("py-10 sm:py-14")}>

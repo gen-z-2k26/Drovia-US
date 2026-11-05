@@ -30,7 +30,9 @@ export function ProductsCatalog({
             .map((product) => product.category || "")
             .filter((name) => name.trim().length > 0),
         ),
-      ).sort(),
+      )
+        .sort()
+        .slice(0, 4),
     [products],
   );
   const [category, setCategory] = useState(initialCategory);

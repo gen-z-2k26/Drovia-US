@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { motion } from "motion/react";
-import type { Product } from "@/lib/types";
+import type { Category, Product } from "@/lib/types";
 import { ProductCard } from "@/components/ProductCard";
 import { SectionHeader } from "@/components/sections/SectionHeader";
 import { useMotionEnabled } from "@/lib/use-motion-enabled";
@@ -11,11 +11,25 @@ import { pageContainer, sectionStackClass, sectionYClass } from "@/lib/layout";
 
 export function FeaturedProductsSection({
   products,
+  groups = [],
 }: {
   products: Product[];
+  groups?: { category: Category; products: Product[] }[];
 }) {
   const featured = products;
   const { enabled } = useMotionEnabled();
+  const sections =
+    groups.length > 0
+      ? groups
+          .map((group) => ({
+            ...group,
+            products: group.products.slice(0, 3),
+          }))
+          .filter((group) => group.products.length > 0)
+          .slice(0, 3)
+      : featured.length > 0
+        ? [{ category: null, products: featured.slice(0, 3) }]
+        : [];
 
   return (
     <section
@@ -27,7 +41,7 @@ export function FeaturedProductsSection({
         <SectionHeader
           eyebrow="Featured"
           title="Featured products"
-          subtitle="Selected products from the catalog."
+          subtitle="A few products from each category."
           titleId="featured-heading"
           action={
             <Link
@@ -39,7 +53,7 @@ export function FeaturedProductsSection({
           }
         />
 
-        {featured.length === 0 ? (
+        {sections.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-border px-6 py-14 text-center">
             <p className="font-medium">No products yet</p>
             <p className="mt-2 text-pretty text-sm text-muted-foreground">
@@ -48,26 +62,45 @@ export function FeaturedProductsSection({
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {featured.map((product, index) =>
-              enabled ? (
-                <motion.div
-                  key={product.id}
-                  initial={{ opacity: 0, y: 12 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, amount: 0.2, margin: "0px 0px -8% 0px" }}
-                  transition={{
-                    duration: 0.28,
-                    delay: Math.min(index * 0.04, 0.16),
-                    ease: easings.standard,
-                  }}
-                >
-                  <ProductCard product={product} />
-                </motion.div>
-              ) : (
-                <ProductCard key={product.id} product={product} />
-              ),
-            )}
+          <div className="space-y-10">
+            {sections.map((group) => (
+              <div key={group.category?.id ?? "featured"} className="space-y-4">
+                {group.category ? (
+                  <div className="flex items-end justify-between gap-4">
+                    <h3 className="font-display text-2xl text-balance">
+                      {group.category.name}
+                    </h3>
+                    <Link
+                      href={`/collection/${group.category.slug}`}
+                      className="shrink-0 text-sm font-medium text-primary underline-offset-4 hover:underline"
+                    >
+                      View category
+                    </Link>
+                  </div>
+                ) : null}
+                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                  {group.products.map((product, index) =>
+                    enabled ? (
+                      <motion.div
+                        key={product.id}
+                        initial={{ opacity: 0, y: 12 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true, amount: 0.2, margin: "0px 0px -8% 0px" }}
+                        transition={{
+                          duration: 0.28,
+                          delay: Math.min(index * 0.04, 0.16),
+                          ease: easings.standard,
+                        }}
+                      >
+                        <ProductCard product={product} />
+                      </motion.div>
+                    ) : (
+                      <ProductCard key={product.id} product={product} />
+                    ),
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>

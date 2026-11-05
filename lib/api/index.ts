@@ -119,6 +119,24 @@ const PRODUCT_FIELDS = [
   "stock_status",
 ].join(",");
 
+const CARD_FIELDS = [
+  "id",
+  "name",
+  "slug",
+  "price",
+  "regular_price",
+  "sale_price",
+  "on_sale",
+  "featured",
+  "average_rating",
+  "rating_count",
+  "menu_order",
+  "images",
+  "categories",
+  "sku",
+  "stock_status",
+].join(",");
+
 type CacheEntry<T> = {
   value: T;
   expiresAt: number;
@@ -309,6 +327,7 @@ export async function getProducts(options?: {
   onSale?: boolean;
   perPage?: number;
   page?: number;
+  card?: boolean;
 }): Promise<Product[]> {
   if (!isWooConfigured() || isWooUnreachable()) {
     return [];
@@ -320,7 +339,7 @@ export async function getProducts(options?: {
     status: "publish",
     orderby: "menu_order",
     order: "asc",
-    _fields: PRODUCT_FIELDS,
+    _fields: options?.card ? CARD_FIELDS : PRODUCT_FIELDS,
   };
 
   if (options?.featured) params.featured = true;
@@ -347,12 +366,12 @@ export async function getProducts(options?: {
 
 export async function getProductsByIds(ids: number[]): Promise<Product[]> {
   if (!ids.length) return [];
-  return getProducts({ include: ids, perPage: ids.length });
+  return getProducts({ include: ids, perPage: ids.length, card: true });
 }
 
 /** Featured products as marked in WooCommerce admin. Falls back to latest products. */
 export async function getFeaturedProducts(limit = 8): Promise<Product[]> {
-  const all = await getProducts({ perPage: 100 });
+  const all = await getProducts({ perPage: 100, card: true });
   const featured = all.filter((product) => product.featured);
   if (featured.length >= limit) return featured.slice(0, limit);
 
@@ -375,7 +394,7 @@ export async function getProductsByCategory(
 ): Promise<Product[]> {
   const [categories, allProducts] = await Promise.all([
     getCategoryRecords(),
-    getProducts({ perPage: 100 }),
+    getProducts({ perPage: 100, card: true }),
   ]);
   const target = category.toLowerCase();
   const match = categories.find(
@@ -395,7 +414,7 @@ export async function getProductsByCategory(
     if (filtered.length > 0) {
       return filtered;
     }
-    return getProducts({ category: match.id, perPage: 100 });
+    return getProducts({ category: match.id, perPage: 100, card: true });
   }
   return [];
 }
