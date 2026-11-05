@@ -44,7 +44,7 @@ function headerValue(headers: Headers, name: string) {
 async function storeRequest<T>(
   path: string,
   options: StoreRequestOptions = {},
-): Promise<{ data: T; token: string | null }> {
+): Promise<{ data: T; token: string | null; nonce: string | null }> {
   const origin = getWooOrigin();
   if (!origin) {
     throw new WooCommerceApiError("WooCommerce is not configured.", {
