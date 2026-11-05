@@ -195,11 +195,16 @@ function decryptStored(key: Buffer, raw: string) {
 async function readStored(): Promise<StoredPaymentConfig | null> {
   const key = encryptionKey();
   if (!key || !blobTokenReady()) return null;
-  const result = await get(BLOB_PATH, {
-    access: "private",
-    useCache: false,
-    ifNoneMatch: cache?.etag || undefined,
-  });
+  let result;
+  try {
+    result = await get(BLOB_PATH, {
+      access: "private",
+      useCache: false,
+      ifNoneMatch: cache?.etag || undefined,
+    });
+  } catch {
+    return cache?.config ?? null;
+  }
   if (!result) {
     cache = null;
     return null;

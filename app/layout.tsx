@@ -7,6 +7,7 @@ import { StoreProvider } from "@/lib/store-context";
 import { ThemeModeProvider } from "@/lib/theme-mode";
 import { getSiteSettings, getSiteUrl } from "@/lib/api";
 import { getThemeStyle } from "@/lib/theme";
+import { defaultPages } from "@/lib/types";
 import { themeInitScript } from "@/lib/theme-script";
 import "./globals.css";
 
@@ -196,8 +197,10 @@ export default async function RootLayout({
         <JsonLd data={organizationLd} />
         <JsonLd data={websiteLd} />
         <ThemeModeProvider defaultMode={settings.theme.defaultMode}>
-          <StoreProvider settings={settings}>
-            <SiteChrome settings={settings}>{children}</SiteChrome>
+          <StoreProvider settings={{ ...settings, pages: defaultPages }}>
+            <SiteChrome settings={{ ...settings, pages: defaultPages }}>
+              {children}
+            </SiteChrome>
           </StoreProvider>
         </ThemeModeProvider>
       </body>
