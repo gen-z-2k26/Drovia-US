@@ -1,9 +1,9 @@
 import type { MetadataRoute } from "next";
 import {
-  getCategoryRecords,
-  getProducts,
+  getProductsByCategory,
   getSiteSettings,
   getSiteUrl,
+  getTopCategories,
 } from "@/lib/api";
 import { POLICY_PAGES } from "@/lib/policy-pages";
 
@@ -77,10 +77,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ];
 
   try {
-    const [products, categories] = await Promise.all([
-      getProducts({ perPage: 100 }),
-      getCategoryRecords(),
-    ]);
+    const categories = await getTopCategories(3);
+    const productGroups = await Promise.all(
+      categories.map((category) => getProductsByCategory(category.slug)),
+    );
+    const products = productGroups.flatMap((group) => group.slice(0, 3));
 
     const productRoutes = products.map((product) => ({
       url: `${base}/products/${product.slug}`,

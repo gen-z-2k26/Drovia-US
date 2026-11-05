@@ -11,21 +11,10 @@ import {
   getSiteUrl,
 } from "@/lib/api";
 import { getBnplPublicConfig } from "@/lib/bnpl-server";
-import type { Product, ProductPaymentDisplay, BnplPublicConfig } from "@/lib/types";
+import { toCardProduct } from "@/lib/catalog-card";
+import type { ProductPaymentDisplay, BnplPublicConfig } from "@/lib/types";
 
 export const revalidate = 60;
-
-function relatedCard(product: Product): Product {
-  return {
-    ...product,
-    description: "",
-    tags: [],
-    specGroups: [],
-    relatedIds: [],
-    images: product.images.slice(0, 1),
-    imageAlts: product.imageAlts.slice(0, 1),
-  };
-}
 
 function emptyPayment(): ProductPaymentDisplay {
   return {
@@ -122,7 +111,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
             .filter((item) => item.id !== product.id)
             .slice(0, 4)
         : [];
-  const relatedCards = related.map(relatedCard);
+  const relatedCards = related.map(toCardProduct);
 
   const siteUrl = getSiteUrl(settings);
   const url = siteUrl

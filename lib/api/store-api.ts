@@ -16,6 +16,7 @@ import {
   toWooAddress,
   type RawStoreCart,
 } from "@/lib/api/map-cart";
+import { isStoreNonceError, storeRequestHeaders } from "@/lib/api/store-headers";
 import type { Address, GuestOrder, StoreCart } from "@/lib/types";
 
 const CART_COOKIE = "wc_cart_token";
@@ -61,13 +62,11 @@ async function storeRequest<T>(
   const store = await cookies();
   const token = store.get(CART_COOKIE)?.value;
   const nonce = options.nonce || store.get(NONCE_COOKIE)?.value;
-  const headers: Record<string, string> = {
-    Accept: "application/json",
-    "Content-Type": "application/json",
-    "User-Agent": "Ecom-Builder-Storefront/1.0",
-  };
-  if (token) headers["Cart-Token"] = token;
-  if (nonce && (options.method || "GET") !== "GET") headers.Nonce = nonce;
+  const headers = storeRequestHeaders({
+    method: options.method,
+    token,
+    nonce,
+  });
 
   const url = new URL(`${origin}/wp-json/wc/store/v1/${path.replace(/^\//, "")}`);
   if (options.query) {
@@ -151,6 +150,26 @@ async function cartCall(
   return mapStoreCart(data);
 }
 
+async function mutateCart(
+  path: string,
+  options: StoreRequestOptions,
+): Promise<StoreCart> {
+  let nonce = options.nonce || (await currentStoreNonce());
+  if (!nonce) {
+    const session = await storeRequest<RawStoreCart>("cart");
+    nonce = session.nonce || "";
+  }
+  try {
+    return await cartCall(path, { ...options, nonce });
+  } catch (error) {
+    if (!(error instanceof WooCommerceApiError) || !isStoreNonceError(error.code)) {
+      throw error;
+    }
+    const session = await storeRequest<RawStoreCart>("cart");
+    return cartCall(path, { ...options, nonce: session.nonce || "" });
+  }
+}
+
 export async function getStoreCart(): Promise<StoreCart> {
   return cartCall("cart");
 }
@@ -164,45 +183,38 @@ export async function addStoreCartItem(input: {
   id: number;
   quantity: number;
 }): Promise<StoreCart> {
-  let nonce = await currentStoreNonce();
-  if (!nonce) {
-    const session = await storeRequest<RawStoreCart>("cart");
-    nonce = session.nonce || "";
-  }
-  const { data } = await storeRequest<RawStoreCart>("cart/add-item", {
+  return mutateCart("cart/add-item", {
     method: "POST",
-    nonce,
     body: { id: input.id, quantity: input.quantity },
   });
-  return mapStoreCart(data);
 }
 
 export async function updateStoreCartItem(input: {
   key: string;
   quantity: number;
 }): Promise<StoreCart> {
-  return cartCall("cart/update-item", {
+  return mutateCart("cart/update-item", {
     method: "POST",
     body: { key: input.key, quantity: input.quantity },
   });
 }
 
 export async function removeStoreCartItem(key: string): Promise<StoreCart> {
-  return cartCall("cart/remove-item", {
+  return mutateCart("cart/remove-item", {
     method: "POST",
     body: { key },
   });
 }
 
 export async function applyStoreCoupon(code: string): Promise<StoreCart> {
-  return cartCall("cart/apply-coupon", {
+  return mutateCart("cart/apply-coupon", {
     method: "POST",
     body: { code },
   });
 }
 
 export async function removeStoreCoupon(code: string): Promise<StoreCart> {
-  return cartCall("cart/remove-coupon", {
+  return mutateCart("cart/remove-coupon", {
     method: "POST",
     body: { code },
   });
@@ -212,7 +224,7 @@ export async function updateStoreCustomer(input: {
   shipping: Address;
   billing: Address;
 }): Promise<StoreCart> {
-  return cartCall("cart/update-customer", {
+  return mutateCart("cart/update-customer", {
     method: "POST",
     body: {
       shipping_address: toWooAddress(input.shipping, false),
@@ -225,14 +237,14 @@ export async function selectStoreShippingRate(input: {
   packageId: number;
   rateId: string;
 }): Promise<StoreCart> {
-  return cartCall("cart/select-shipping-rate", {
+  return mutateCart("cart/select-shipping-rate", {
     method: "POST",
     body: { package_id: input.packageId, rate_id: input.rateId },
   });
 }
 
 export async function clearStoreCart(): Promise<StoreCart> {
-  return cartCall("cart/items", { method: "DELETE" });
+  return mutateCart("cart/items", { method: "DELETE" });
 }
 
 export async function getGuestStoreOrder(input: {

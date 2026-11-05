@@ -18,7 +18,9 @@ export function CategoriesSection({
   settings: StoreSettings;
 }) {
   const { enabled } = useMotionEnabled();
-  const resolved = categories.filter((category) => category.parent === 0);
+  const resolved = categories
+    .filter((category) => category.parent === 0)
+    .slice(0, 3);
 
   return (
     <section

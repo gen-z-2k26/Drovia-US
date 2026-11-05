@@ -2,11 +2,13 @@ import type { Metadata } from "next";
 import { HomeSections } from "@/components/HomeSections";
 import { JsonLd } from "@/components/JsonLd";
 import {
-  getFeaturedProducts,
+  getProductsByCategory,
   getSiteSettings,
   getSiteUrl,
   getTopCategories,
 } from "@/lib/api";
+import { toCardProduct } from "@/lib/catalog-card";
+import { defaultPages } from "@/lib/types";
 
 export const revalidate = 60;
 
@@ -43,10 +45,18 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function HomePage() {
   const settings = await getSiteSettings();
-  const [categories, featuredProducts] = await Promise.all([
-    getTopCategories(6),
-    getFeaturedProducts(8),
-  ]);
+  const categories = await getTopCategories(3);
+  const groups = await Promise.all(
+    categories.map(async (category) => {
+      const products = (await getProductsByCategory(category.slug)).slice(0, 3);
+      return {
+        category: { ...category, count: products.length },
+        products,
+      };
+    }),
+  );
+  const featuredProducts = groups.flatMap((group) => group.products);
+  const landingCategories = groups.map((group) => group.category);
   const siteUrl = getSiteUrl(settings);
 
   const itemListLd = {
@@ -69,9 +79,13 @@ export default async function HomePage() {
     <>
       <JsonLd data={itemListLd} />
       <HomeSections
-        settings={settings}
-        products={featuredProducts}
-        categories={categories}
+        settings={{ ...settings, pages: defaultPages }}
+        products={featuredProducts.map(toCardProduct)}
+        categories={landingCategories}
+        categoryProducts={groups.map((group) => ({
+          ...group,
+          products: group.products.map(toCardProduct),
+        }))}
       />
     </>
   );

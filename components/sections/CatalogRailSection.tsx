@@ -42,7 +42,7 @@ export function CatalogRailSection({
     <MarqueeRail
       items={items}
       label="Store categories and products"
-      duration={34}
+      duration={72}
     />
   );
 }
