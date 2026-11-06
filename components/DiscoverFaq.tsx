@@ -25,7 +25,13 @@ function sectionText(section: CareSection) {
     .toLowerCase();
 }
 
-export function DiscoverFaq({ page }: { page: CarePage }) {
+export function DiscoverFaq({
+  page,
+  email = "info@droviia.us",
+}: {
+  page: CarePage;
+  email?: string;
+}) {
   const [query, setQuery] = useState("");
   const [topic, setTopic] = useState("all");
 
@@ -92,7 +98,7 @@ export function DiscoverFaq({ page }: { page: CarePage }) {
       {filtered.length === 0 ? (
         <p className="text-sm text-muted-foreground">
           No matching questions found. Try a different search, or email{" "}
-          <RichText text="info@orvexo.us" />.
+          <RichText text={email} />.
         </p>
       ) : (
         <div className="space-y-12">

@@ -1,68 +1,67 @@
 import Link from "next/link";
-import Image from "next/image";
 import type { StoreSettings } from "@/lib/types";
-import { Reveal, RevealImage } from "@/components/sections/Reveal";
+import { Reveal } from "@/components/sections/Reveal";
 import { buttonVariants } from "@/components/ui/button";
 import { pageContainer, sectionYClass } from "@/lib/layout";
 import { cn } from "@/lib/utils";
-
-const ABOUT_IMAGE = "/brand/about-showcase.jpg";
 
 export function StorySection({ settings }: { settings: StoreSettings }) {
   return (
     <section
       aria-labelledby="story-heading"
-      className={cn("border-y border-border bg-muted/30", sectionYClass)}
+      className={cn("border-b border-border", sectionYClass)}
     >
       <div
         className={pageContainer(
-          "grid items-center gap-10 lg:grid-cols-2 lg:gap-16",
+          "grid items-start gap-10 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] lg:gap-16",
         )}
       >
         <Reveal className="space-y-5">
-          <p className="text-sm font-medium tracking-wide text-primary">
+          <p className="text-sm font-medium tracking-wide text-accent">
             About {settings.name}
           </p>
           <h2
             id="story-heading"
             className="font-display text-balance text-3xl sm:text-4xl"
           >
-            Built for a clear shopping flow
+            A better home starts with the right essentials
           </h2>
           <p className="text-pretty text-lg leading-relaxed text-muted-foreground">
-            Browse, compare, and check out with a total you can review before
-            you pay. Catalog data comes from the store; the rest of the site is
-            here to explain packing, shipping, and support.
+            DROVIIA is a U.S. online shop for home appliances, climate comfort,
+            and personal care, operated by {settings.contact.legalName} in
+            Gardena, California.
           </p>
           <div className="flex flex-wrap gap-3">
             <Link
-              href="/products"
+              href="/about-us"
               className={cn(buttonVariants({ size: "lg" }), "mt-2 inline-flex")}
             >
-              Browse the catalog
+              About us
             </Link>
             <Link
-              href="/about-us"
+              href="/contact-us"
               className={cn(
                 buttonVariants({ size: "lg", variant: "outline" }),
                 "mt-2 inline-flex",
               )}
             >
-              Read more
+              Contact
             </Link>
           </div>
         </Reveal>
 
-        <RevealImage className="overflow-hidden rounded-2xl border border-border shadow-md">
-          <Image
-            src={ABOUT_IMAGE}
-            alt="Headphones, a laptop, a monitor, and a controller on a lit platform."
-            width={1024}
-            height={512}
-            unoptimized
-            className="h-auto w-full"
-          />
-        </RevealImage>
+        <Reveal className="rounded-lg bg-card p-6 sm:p-8">
+          <p className="font-display text-2xl text-balance">
+            Your home. Your comfort. Your everyday essentials.
+          </p>
+          <ul className="mt-6 space-y-3 text-sm leading-relaxed text-muted-foreground">
+            <li>Product details, prices, and shipping charges shown before checkout.</li>
+            <li>Order updates and tracking when a shipment is created.</li>
+            <li>
+              Customer care at {settings.contact.email} or {settings.contact.phone}.
+            </li>
+          </ul>
+        </Reveal>
       </div>
     </section>
   );

@@ -6,23 +6,23 @@ import { cn } from "@/lib/utils";
 const steps = [
   {
     number: "01",
-    title: "Discover",
-    text: "Browse categories and featured products from the store.",
+    title: "Browse",
+    text: "Explore appliances, climate equipment, and personal care in one catalog.",
   },
   {
     number: "02",
-    title: "Compare",
-    text: "Check specs, stock, and prices straight from WooCommerce.",
+    title: "Review",
+    text: "Check the price, shipping, and total before you pay.",
   },
   {
     number: "03",
-    title: "Order",
-    text: "Check out securely. Orders are created in WooCommerce.",
+    title: "Checkout",
+    text: "Pay with the methods shown at checkout.",
   },
   {
     number: "04",
-    title: "Enjoy",
-    text: "Receive your purchase. Need help? Get in touch with us.",
+    title: "Track",
+    text: "Use the details in your confirmation on the order tracking page.",
   },
 ];
 
@@ -34,9 +34,9 @@ export function StepsSection() {
     >
       <div className={pageContainer(sectionStackClass)}>
         <SectionHeader
-          eyebrow="How it works"
-          title="Discover, compare, order"
-          subtitle="A wide catalog stays clear when you shop in simple steps."
+          eyebrow="How ordering works"
+          title="Browse, review, then track"
+          subtitle="A straightforward path from the catalog to a shipment you can follow."
           titleId="steps-heading"
         />
 

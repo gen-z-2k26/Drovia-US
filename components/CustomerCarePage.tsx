@@ -7,6 +7,7 @@ import {
   type CarePage,
 } from "@/lib/customer-care";
 import { pageContainer } from "@/lib/layout";
+import { VerbatimDocument } from "@/components/VerbatimDocument";
 import type { CareLayout } from "@/lib/trust";
 import type { StoreSettings } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -357,6 +358,10 @@ export function CustomerCarePage({
   settings: StoreSettings;
   layout?: CareLayout;
 }) {
+  if (page.lines?.length) {
+    return <VerbatimDocument lines={page.lines} />;
+  }
+
   const showToc = layout === "policy";
   const toc = showToc
     ? page.sections.map((section) => ({

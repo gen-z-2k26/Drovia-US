@@ -8,13 +8,13 @@ import { cn } from "@/lib/utils";
 const items: TrustItem[] = [
   {
     icon: "truck",
-    title: "Free shipping",
-    text: "Free standard shipping across the Netherlands. Estimated delivery 4-6 business days.",
+    title: "Shipping from $5",
+    text: "Standard shipping is $5 under $100 and free at $100 or more. Large appliances may include freight charges shown at checkout. Estimated parcel delivery is 3-6 business days.",
   },
   {
     icon: "refresh",
     title: "30-day returns",
-    text: "Request a return within 30 days of delivery under our return policy.",
+    text: "Eligible products can be requested for return within 30 days. Conditions, customer-paid return shipping, and a $5 restocking fee may apply.",
   },
   {
     icon: "shield",

@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { DiscoverAbout } from "@/components/DiscoverView";
-import { getSiteSettings } from "@/lib/api";
+import { VerbatimDocument } from "@/components/VerbatimDocument";
 import { discoverBySlug } from "@/lib/discover";
 
 export const revalidate = 60;
@@ -14,7 +13,6 @@ export const metadata: Metadata = {
 };
 
 export default async function AboutPage() {
-  if (!PAGE) notFound();
-  const settings = await getSiteSettings();
-  return <DiscoverAbout page={PAGE} settings={settings} />;
+  if (!PAGE?.lines?.length) notFound();
+  return <VerbatimDocument lines={PAGE.lines} />;
 }

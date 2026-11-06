@@ -42,28 +42,29 @@ export default async function TrackOrderPage({
 
   return (
     <div className="pb-16">
-      <section className="bg-foreground text-background">
+      <section className="border-b border-primary/50 bg-primary text-primary-foreground">
         <div className={pageContainer("py-12 text-center sm:py-16")}>
-          <p className="text-xs font-semibold tracking-[0.22em] uppercase text-background/70">
+          <p className="text-xs font-semibold tracking-[0.22em] uppercase text-primary-foreground/70">
             {settings.name}
           </p>
-          <h1 className="mt-3 font-display text-4xl text-background sm:text-6xl">
+          <h1 className="mt-3 font-display text-4xl sm:text-6xl">
             Track your order
           </h1>
-          <p className="mx-auto mt-4 max-w-lg text-pretty text-base text-background/85">
+          <p className="mx-auto mt-4 max-w-lg text-pretty text-base text-primary-foreground/85">
             Look up a guest order with the number, key, and email from your confirmation.
+            Phone support is {settings.contact.openingHours}. Live chat is available 24/7.
           </p>
         </div>
       </section>
 
-      <div className={pageContainer("space-y-8 pt-8 sm:pt-10")}>
+      <div className={pageContainer("space-y-8 bg-primary/15 pt-8 sm:pt-10")}>
         <ol className="grid gap-3 sm:grid-cols-3">
           {steps.map((step, index) => (
             <li
               key={step.title}
-              className="rounded-2xl border border-foreground/15 bg-card p-5"
+              className="rounded-2xl border border-primary/40 bg-card p-5"
             >
-              <span className="flex size-9 items-center justify-center rounded-full bg-foreground text-sm font-semibold text-background">
+              <span className="flex size-9 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
                 {index + 1}
               </span>
               <p className="mt-4 flex items-center gap-2 text-sm font-semibold text-foreground">

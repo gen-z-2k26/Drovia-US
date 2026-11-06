@@ -10,7 +10,7 @@ function originOf(value: string) {
   }
 }
 
-const STORE_FALLBACK = "https://orvexo.us";
+const STORE_FALLBACK = "https://droviia.us";
 
 /** CTX writes WordPress permalinks. Keep media on that host; point product links at the storefront. */
 function rewriteProductLinks(xml: string, wpOrigin: string, storeOrigin: string) {

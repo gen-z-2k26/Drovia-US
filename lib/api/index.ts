@@ -21,7 +21,6 @@ import {
   type WooStoreMoney,
 } from "@/lib/api/map-woo-store";
 import { getLivePromo } from "@/lib/api/promo";
-import { fetchWpFooterColumns } from "@/lib/api/wp-menus";
 import { googleFontStylesheetUrl } from "@/lib/fonts";
 import { getPaymentAccounts } from "@/lib/payment-config";
 import type {
@@ -260,8 +259,7 @@ export async function getSiteSettings(): Promise<StoreSettings> {
   }
 
   try {
-    const [siteInfo, general, emailSettings, storeMoney, footerColumns] =
-      await Promise.all([
+    const [siteInfo, general, emailSettings, storeMoney] = await Promise.all([
       fetchWpSiteInfo(),
       cachedSoftWooCall(
         "settings/general",
@@ -278,7 +276,6 @@ export async function getSiteSettings(): Promise<StoreSettings> {
         "settings/email",
       ),
       fetchStoreMoney(),
-      fetchWpFooterColumns(designSettings.navigation.footerColumns),
     ]);
 
     const merged = mergeWooStoreIdentity(designSettings, {
@@ -296,21 +293,8 @@ export async function getSiteSettings(): Promise<StoreSettings> {
           "getLivePromo",
         );
 
-    const liveColumns =
-      footerColumns ?? merged.navigation.footerColumns;
-    const brandedColumns = liveColumns.map((column) => ({
-      ...column,
-      title: merged.name
-        ? column.title.split(designSettings.name).join(merged.name)
-        : column.title,
-    }));
-
     return {
       ...merged,
-      navigation: {
-        ...merged.navigation,
-        footerColumns: brandedColumns,
-      },
       promoBanner: promo.promoBanner,
       promoId: promo.promoId,
       promoCoupon: promo.promoCoupon,
@@ -586,10 +570,10 @@ export async function getDefaultCountry(): Promise<string> {
 }
 
 export function getSiteUrl(settings?: StoreSettings) {
-  const fromEnv = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "");
-  if (fromEnv) return fromEnv;
   const fromSettings = settings?.seo.siteUrl?.replace(/\/$/, "");
   if (fromSettings) return fromSettings;
+  const fromEnv = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "");
+  if (fromEnv) return fromEnv;
   return "";
 }
 

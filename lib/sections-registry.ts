@@ -4,11 +4,13 @@
  */
 export const HOME_SECTION_ORDER = [
   "hero",
+  "needs",
   "trustStrip",
-  "categories",
   "featuredProducts",
-  "story",
   "steps",
-  "trust",
+  "commitment",
+  "story",
+  "support",
+  "faq",
   "newsletter",
 ] as const;

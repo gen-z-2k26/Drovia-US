@@ -59,58 +59,6 @@ function formatWooStoreAddress(general: Record<string, string>) {
   return parts.join(", ");
 }
 
-function replaceBrand(text: string, from: string, to: string) {
-  if (!text || !from || from === to) return text;
-  return text.split(from).join(to);
-}
-
-function applyWpBrand(
-  design: StoreSettings,
-  name: string,
-  tagline: string,
-): StoreSettings {
-  const from = design.name;
-  const brand = (value: string) => replaceBrand(value, from, name);
-
-  return {
-    ...design,
-    name,
-    tagline,
-    contact: {
-      ...design.contact,
-      legalName: brand(design.contact.legalName) || name,
-    },
-    hero: {
-      headline: brand(design.hero.headline),
-      support: brand(design.hero.support),
-    },
-    navigation: {
-      header: design.navigation.header,
-      footerColumns: design.navigation.footerColumns.map((column) => ({
-        ...column,
-        title: brand(column.title),
-      })),
-    },
-    footer: {
-      ...design.footer,
-      blurb: brand(design.footer.blurb),
-      trustLine: brand(design.footer.trustLine),
-      contactTitle: design.footer.contactTitle
-        ? brand(design.footer.contactTitle)
-        : design.footer.contactTitle,
-      chatLine: design.footer.chatLine
-        ? brand(design.footer.chatLine)
-        : design.footer.chatLine,
-    },
-    seo: {
-      ...design.seo,
-      title: brand(design.seo.title),
-      description: brand(design.seo.description),
-      keywords: design.seo.keywords.map((keyword) => brand(keyword)),
-    },
-  };
-}
-
 function prefixSuffixFromPosition(symbol: string, position: string) {
   switch (position) {
     case "right":
@@ -173,25 +121,13 @@ export function mergeWooStoreIdentity(
     design.decimalSeparator;
 
   const wooAddress = formatWooStoreAddress(general);
-  const hasStreet = Boolean(general.woocommerce_store_address?.trim());
-  const address =
-    design.contact.address.trim() ||
-    (hasStreet ? wooAddress : "") ||
-    wooAddress;
-  const wpName = decodeEntities(site.name || "").trim();
-  const wpTagline = decodeEntities(site.description || "").trim();
-  const branded = applyWpBrand(
-    design,
-    wpName || design.name,
-    wpTagline || design.tagline,
-  );
 
   return {
-    ...branded,
+    ...design,
     contact: {
-      ...branded.contact,
-      address,
-      email: wooEmail || branded.contact.email,
+      ...design.contact,
+      address: design.contact.address.trim() || wooAddress,
+      email: design.contact.email.trim() || wooEmail,
     },
     currency,
     currencySymbol: symbol,
@@ -201,8 +137,8 @@ export function mergeWooStoreIdentity(
     thousandSeparator,
     decimalSeparator,
     seo: {
-      ...branded.seo,
-      siteUrl: branded.seo.siteUrl || site.url || "",
+      ...design.seo,
+      siteUrl: design.seo.siteUrl || site.url || "",
     },
   };
 }

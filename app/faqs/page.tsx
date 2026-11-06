@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { DiscoverFaq } from "@/components/DiscoverFaq";
-import { DiscoverFaqFrame } from "@/components/DiscoverView";
-import { getSiteSettings } from "@/lib/api";
+import { VerbatimDocument } from "@/components/VerbatimDocument";
 import { discoverBySlug } from "@/lib/discover";
 
 export const revalidate = 60;
@@ -15,11 +13,6 @@ export const metadata: Metadata = {
 };
 
 export default async function FaqPage() {
-  if (!PAGE) notFound();
-  const settings = await getSiteSettings();
-  return (
-    <DiscoverFaqFrame page={PAGE} settings={settings}>
-      <DiscoverFaq page={PAGE} />
-    </DiscoverFaqFrame>
-  );
+  if (!PAGE?.lines?.length) notFound();
+  return <VerbatimDocument lines={PAGE.lines} />;
 }

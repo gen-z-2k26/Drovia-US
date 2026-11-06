@@ -1,4 +1,4 @@
-/** Public storefront paths, matching https://orvexo.us/ */
+/** Public storefront paths, matching https://droviia.us/ */
 
 export const CONTENT_PAGES = [
   { slug: "about-us", title: "About Us" },
@@ -42,6 +42,8 @@ const PATH_ALIASES: Record<string, string> = {
 };
 
 const STORE_HOSTS = new Set([
+  "droviia.us",
+  "www.droviia.us",
   "orvexo.us",
   "www.orvexo.us",
   "admin.orvexo.us",

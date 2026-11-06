@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { Clock, Mail, MapPin, MessageCircle, Phone } from "lucide-react";
 import type { StoreSettings } from "@/lib/types";
 import { BrandLogo } from "@/components/BrandLogo";
 import { pageContainer } from "@/lib/layout";
@@ -13,44 +12,36 @@ export function Footer({ settings }: { settings: StoreSettings }) {
     settings.navigation?.footerColumns?.length > 0
       ? settings.navigation.footerColumns
       : [];
-  const blurb =
-    settings.footer?.blurb ||
-    settings.tagline ||
-    `This is placeholder store info for ${settings.name}.`;
-  const contactTitle =
-    settings.footer?.contactTitle || "Business Information";
-  const chatLine = settings.footer?.chatLine;
   const phoneHref = settings.contact.phone.replace(/[^\d+]/g, "");
+  const year = new Date().getFullYear();
 
   return (
-    <footer className="mt-auto border-t border-border bg-card">
-      <div className={pageContainer("py-12 sm:py-14")}>
-        <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-6 lg:gap-x-8">
-          <div className="space-y-4 sm:col-span-2 lg:col-span-2">
-            <Link href="/" className="inline-flex items-center">
-              <BrandLogo heightClass="h-9 sm:h-10" />
-            </Link>
-            <p className="max-w-sm text-pretty text-sm leading-relaxed text-muted-foreground">
-              {blurb}
-            </p>
-          </div>
+    <footer className="dark mt-auto bg-[#101613] text-[#F3F7F2]">
+      <div className={pageContainer("py-12 sm:py-16")}>
+        <Link href="/" className="inline-flex items-center">
+          <BrandLogo heightClass="h-8 sm:h-9" alt={settings.name} />
+        </Link>
+
+        <div className="mt-10 grid gap-10 sm:grid-cols-2 lg:grid-cols-3">
           {columns.map((column) => (
             <div key={column.slug || column.title} className="space-y-3">
-              <p className="text-sm font-medium tracking-tight">{column.title}</p>
-              <ul className="space-y-2.5 text-sm text-muted-foreground">
+              <p className="text-sm font-medium tracking-tight text-white">
+                {column.title}
+              </p>
+              <ul className="space-y-2.5 text-sm text-white/70">
                 {column.links.map((link) => (
                   <li key={`${column.title}-${link.label}`}>
                     {isExternal(link.href) ? (
                       <a
                         href={link.href}
-                        className="transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        className="transition-colors hover:text-[#9DCFB0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#9DCFB0]"
                       >
                         {link.label}
                       </a>
                     ) : (
                       <Link
                         href={link.href}
-                        className="transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        className="transition-colors hover:text-[#9DCFB0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#9DCFB0]"
                       >
                         {link.label}
                       </Link>
@@ -60,55 +51,43 @@ export function Footer({ settings }: { settings: StoreSettings }) {
               </ul>
             </div>
           ))}
-
-          <div className="space-y-3 lg:col-span-1">
-            <p className="text-sm font-medium tracking-tight">{contactTitle}</p>
-            <ul className="space-y-3 text-sm text-muted-foreground">
-              {settings.contact.address ? (
-                <li className="flex gap-2.5">
-                  <MapPin className="mt-0.5 size-4 shrink-0" aria-hidden />
-                  <span>{settings.contact.address}</span>
-                </li>
-              ) : null}
-              {settings.contact.phone ? (
-                <li className="flex gap-2.5">
-                  <Phone className="mt-0.5 size-4 shrink-0" aria-hidden />
-                  <a href={`tel:${phoneHref}`} className="hover:text-foreground">
-                    {settings.contact.phone}
-                  </a>
-                </li>
-              ) : null}
-              {settings.contact.email ? (
-                <li className="flex gap-2.5">
-                  <Mail className="mt-0.5 size-4 shrink-0" aria-hidden />
-                  <a
-                    href={`mailto:${settings.contact.email}`}
-                    className="hover:text-foreground"
-                  >
-                    {settings.contact.email}
-                  </a>
-                </li>
-              ) : null}
-              {settings.contact.openingHours ? (
-                <li className="flex gap-2.5">
-                  <Clock className="mt-0.5 size-4 shrink-0" aria-hidden />
-                  <span>{settings.contact.openingHours}</span>
-                </li>
-              ) : null}
-              {chatLine ? (
-                <li className="flex gap-2.5">
-                  <MessageCircle className="mt-0.5 size-4 shrink-0" aria-hidden />
-                  <span>{chatLine}</span>
-                </li>
-              ) : null}
-            </ul>
-          </div>
         </div>
 
-        <div className="mt-10 border-t border-border pt-6 text-xs text-muted-foreground">
+        <div className="mt-10 border-t border-white/15 pt-6">
+          <p className="text-sm font-medium text-white">
+            {settings.footer?.contactTitle || "Customer Support"}
+          </p>
+          <p className="mt-2 text-sm text-white/75">
+            {settings.contact.email ? (
+              <a
+                href={`mailto:${settings.contact.email}`}
+                className="hover:text-[#9DCFB0]"
+              >
+                {settings.contact.email}
+              </a>
+            ) : null}
+            {settings.contact.email && settings.contact.phone ? (
+              <span className="px-2 text-white/40">|</span>
+            ) : null}
+            {settings.contact.phone ? (
+              <a href={`tel:${phoneHref}`} className="hover:text-[#9DCFB0]">
+                {settings.contact.phone}
+              </a>
+            ) : null}
+          </p>
+          <p className="mt-1 text-sm text-white/75">
+            {settings.contact.openingHours}
+            {settings.contact.openingHours && settings.footer?.chatLine ? (
+              <span className="px-2 text-white/40">|</span>
+            ) : null}
+            {settings.footer?.chatLine}
+          </p>
+        </div>
+
+        <div className="mt-6 border-t border-white/15 pt-6 text-xs text-white/60">
           <p>
-            © {new Date().getFullYear()} {settings.contact.legalName || settings.name}.
-            All rights reserved.
+            © {year} {settings.name}. Operated by{" "}
+            {settings.contact.legalName || settings.name}. All rights reserved.
           </p>
         </div>
       </div>

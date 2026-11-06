@@ -18,10 +18,9 @@ import { cn } from "@/lib/utils";
 const fallbackNav = [
   { href: "/", label: "Home" },
   { href: "/products", label: "Shop" },
-  { href: "/about", label: "About" },
-  { href: "/reviews", label: "Reviews" },
-  { href: "/faq", label: "FAQ" },
-  { href: "/contact", label: "Contact" },
+  { href: "/about-us", label: "About" },
+  { href: "/faqs", label: "FAQs" },
+  { href: "/contact-us", label: "Contact" },
 ];
 
 export function Header() {

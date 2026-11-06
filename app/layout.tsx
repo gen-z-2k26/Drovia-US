@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Script from "next/script";
-import { Fraunces, Varela_Round } from "next/font/google";
+import { Figtree, Syne } from "next/font/google";
 import { JsonLd } from "@/components/JsonLd";
 import { SiteChrome } from "@/components/SiteChrome";
 import { StoreProvider } from "@/lib/store-context";
@@ -11,17 +11,17 @@ import { defaultPages } from "@/lib/types";
 import { themeInitScript } from "@/lib/theme-script";
 import "./globals.css";
 
-const varela = Varela_Round({
-  weight: "400",
+const figtree = Figtree({
   subsets: ["latin"],
-  variable: "--font-varela",
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-figtree",
   display: "swap",
 });
 
-const fraunces = Fraunces({
+const syne = Syne({
   subsets: ["latin"],
-  weight: ["400", "500", "600"],
-  variable: "--font-display",
+  weight: ["500", "600", "700"],
+  variable: "--font-syne",
   display: "swap",
 });
 
@@ -48,13 +48,7 @@ export async function generateMetadata(): Promise<Metadata> {
       creator: settings.name,
       keywords: settings.seo.keywords.length
         ? settings.seo.keywords
-        : [
-            settings.name,
-            "online store",
-            "household appliances",
-            "computers",
-            "audio equipment",
-          ],
+        : [settings.name, "home appliances", "personal care"],
       openGraph: {
         type: "website",
         siteName: settings.name,
@@ -77,9 +71,6 @@ export async function generateMetadata(): Promise<Metadata> {
       robots: {
         index: true,
         follow: true,
-      },
-      verification: {
-        google: "K5OpExPL0GS0pV-imCaeizrzBsuArNxq6HnJatROH_I",
       },
       alternates: {
         canonical: "/",
@@ -162,7 +153,7 @@ export default async function RootLayout({
   return (
     <html
       lang={settings.locale.startsWith("nl") ? "nl" : "en"}
-      className={`${varela.variable} ${fraunces.variable} antialiased`}
+      className={`${figtree.variable} ${syne.variable} antialiased`}
       style={getThemeStyle(settings)}
       data-store={settings.id}
       data-motion={settings.theme.motion}

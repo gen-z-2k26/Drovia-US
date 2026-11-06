@@ -1,8 +1,8 @@
 {
-  "id": "orvexo",
-  "name": "Orvexo",
-  "tagline": "Shop a wide range of products in one place",
-  "logo": "/stores/orvexo-logo.svg",
+  "id": "droviia",
+  "name": "DROVIIA",
+  "tagline": "Everyday essentials for better living",
+  "logo": "/brand/droviia-logo-dark.png",
   "currency": "",
   "currencySymbol": "",
   "currencyPrefix": "",
@@ -12,112 +12,113 @@
   "decimalSeparator": ".",
   "locale": "en-US",
   "contact": {
-    "email": "info@orvexo.us",
-    "phone": "+1 (256) 772-8820",
-    "address": "1430 Wall Triana Hwy SW, Madison, AL 35756, USA",
-    "openingHours": "Monday-Friday, 9:00 AM-5:00 PM CT",
-    "legalName": "Universal Lighting Technologies",
+    "email": "info@droviia.us",
+    "phone": "+1 (424) 329-0223",
+    "address": "1320 W El Segundo Blvd Ste E, Gardena, CA 90247, United States",
+    "openingHours": "Mon-Fri, 9:00 AM-5:00 PM PT",
+    "legalName": "Modern Closet Spaces LLC",
     "vatNumber": ""
   },
   "promoBanner": "",
   "promoId": "",
   "promoCoupon": "",
   "hero": {
-    "headline": "Shop a wide range of products in one place",
-    "support": "From everyday essentials to standout finds, browse many different items and pick what fits you."
+    "headline": "Comfort, convenience, and the essentials for home",
+    "support": "Kitchen appliances, climate control, and personal care, with prices, shipping, and support you can review before you buy."
   },
   "navigation": {
     "header": [
       { "label": "Home", "href": "/" },
       { "label": "Shop", "href": "/products" },
       { "label": "About", "href": "/about-us" },
-      { "label": "Reviews", "href": "/reviews" },
-      { "label": "FAQ", "href": "/faqs" },
+      { "label": "FAQs", "href": "/faqs" },
       { "label": "Contact", "href": "/contact-us" }
     ],
     "footerColumns": [
       {
-        "title": "Discover Orvexo",
+        "title": "Quick Links",
         "slug": "footer-discover",
         "links": [
           { "label": "Home", "href": "/" },
-          { "label": "Shop All Electronics", "href": "/products" },
+          { "label": "Shop All", "href": "/products" },
+          { "label": "Categories", "href": "/products" },
           { "label": "About Us", "href": "/about-us" },
           { "label": "Our Commitment", "href": "/our-commitment" },
-          { "label": "Contact Us", "href": "/contact-us" },
-          { "label": "Frequently Asked Questions", "href": "/faqs" }
+          { "label": "Contact Us", "href": "/contact-us" }
         ]
       },
       {
         "title": "Customer Care",
         "slug": "footer-customer-care",
         "links": [
-          { "label": "Order Help Center", "href": "/order-help-center" },
-          { "label": "Track Your Order", "href": "/track-your-order" },
-          { "label": "Shipping & Delivery", "href": "/shipping-policy" },
-          { "label": "Returns & Refunds", "href": "/return-and-refund-policy" },
-          { "label": "Order Cancellations", "href": "/cancellation-policy" },
-          { "label": "Payment Options", "href": "/payment-policy" },
-          { "label": "Buy Now, Pay Later", "href": "/buy-now-pay-later" },
-          { "label": "Warranty & Support", "href": "/warranty" }
+          { "label": "FAQs", "href": "/faqs" },
+          { "label": "Shipping", "href": "/shipping-policy" },
+          { "label": "Returns", "href": "/return-and-refund-policy" },
+          { "label": "Cancellations", "href": "/cancellation-policy" },
+          { "label": "Order Tracking", "href": "/track-your-order" },
+          { "label": "Payments", "href": "/payment-policy" },
+          { "label": "Warranty", "href": "/warranty" },
+          { "label": "Order Help", "href": "/order-help-center" }
         ]
       },
       {
-        "title": "Trust & Transparency",
+        "title": "Legal & Policies",
         "slug": "footer-trust",
         "links": [
-          { "label": "Privacy Policy", "href": "/privacy-policy" },
-          { "label": "Terms of Service", "href": "/terms-of-service" },
-          { "label": "Cookie Policy", "href": "/cookie-policy" },
+          { "label": "Privacy", "href": "/privacy-policy" },
+          { "label": "Terms", "href": "/terms-of-service" },
+          { "label": "Cookies", "href": "/cookie-policy" },
           { "label": "Legal Notice", "href": "/legal-notice" },
-          { "label": "Accessibility Statement", "href": "/accessibility-statement" },
-          { "label": "Your Privacy Choices", "href": "/your-privacy-choices" }
+          { "label": "Accessibility", "href": "/accessibility-statement" },
+          { "label": "Privacy Choices", "href": "/your-privacy-choices" }
         ]
       }
     ]
   },
   "footer": {
-    "blurb": "Technology for Everyday Living. Confidence in Every Purchase.",
+    "blurb": "Everyday essentials for a more comfortable home.",
     "trustLine": "",
-    "contactTitle": "Business Information",
-    "chatLine": "Live Chat Available 24/7"
+    "contactTitle": "Customer Support",
+    "chatLine": "24/7 Live Chat"
   },
   "seo": {
-    "title": "Orvexo | Online store",
-    "description": "Shop Orvexo. Browse products, read reviews, and check out with encrypted payments.",
+    "title": "DROVIIA | Home appliances and everyday essentials",
+    "description": "Shop home appliances, heating and cooling, and personal care at DROVIIA. Operated by Modern Closet Spaces LLC in Gardena, California.",
     "keywords": [
-      "Orvexo",
-      "online store",
-      "shop"
+      "DROVIIA",
+      "home appliances",
+      "kitchen appliances",
+      "air conditioners",
+      "personal care"
     ],
-    "ogImage": "/stores/orvexo-logo.svg",
-    "siteUrl": ""
+    "ogImage": "/brand/droviia-logo-dark.png",
+    "siteUrl": "https://droviia.us"
   },
   "theme": {
-    "font": "Varela Round",
-    "fontDisplay": "Fraunces",
-    "radius": "0.75rem",
+    "font": "var(--font-figtree)",
+    "fontDisplay": "var(--font-syne)",
+    "radius": "0.5rem",
     "defaultMode": "system",
     "motion": "subtle",
     "light": {
-      "primary": "#8EC8EA",
-      "accent": "#D4B896",
-      "background": "#F6F3EE",
-      "foreground": "#1A1816",
-      "card": "#FFFFFF",
-      "muted": "#EFE8E0",
-      "mutedForeground": "#6B6560",
-      "border": "rgba(26, 24, 22, 0.10)"
+      "primary": "#9DCFB0",
+      "accent": "#3E6B52",
+      "background": "#FFFFFF",
+      "foreground": "#1C2420",
+      "card": "#F4F7F2",
+      "muted": "#E7F0EA",
+      "mutedForeground": "#5C6B62",
+      "border": "rgba(28, 36, 32, 0.12)"
     },
     "dark": {
-      "primary": "#8EC8EA",
-      "accent": "#D4B896",
-      "background": "#0E0D0C",
-      "foreground": "#F6F3EE",
-      "card": "#161412",
-      "muted": "#221F1C",
-      "mutedForeground": "#A8A29C",
-      "border": "rgba(246, 243, 238, 0.12)"
+      "primary": "#9DCFB0",
+      "accent": "#B7DCC4",
+      "background": "#101613",
+      "foreground": "#F3F7F2",
+      "card": "#1A2420",
+      "muted": "#24302A",
+      "mutedForeground": "#A8B7AE",
+      "border": "rgba(243, 247, 242, 0.12)"
     }
   },
   "productPage": {
