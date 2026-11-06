@@ -63,45 +63,64 @@ const FIRST = [
 
 const LAST = "ABCDEFGHJKLMNPRSTW".split("");
 
+const PRODUCTS = [
+  "refrigerator",
+  "wine fridge",
+  "range hood",
+  "washer",
+  "portable air conditioner",
+  "space heater",
+  "humidifier",
+  "hair dryer",
+  "straightener",
+  "garage door opener",
+];
+
 const TITLES_5 = [
-  "Better than the photos",
-  "Would order again",
-  "Well made and well packed",
-  "Exactly as described",
-  "Perfect as a gift",
-  "Clean store, fair prices",
-  "Fast and careful shipping",
-  "Smooth checkout",
+  "Droviia packed it carefully",
+  "Would order from Droviia again",
+  "Exactly the Droviia listing",
+  "Smooth Droviia checkout",
   "Arrived ready to use",
-  "Easy from cart to door",
+  "Clear tracking from Droviia",
+  "Well made and well packed",
+  "Easy order from our state",
+  "Photos matched the Droviia page",
+  "Glad we chose Droviia",
 ];
 
 const TITLES_4 = [
-  "Great value",
-  "Happy overall",
-  "Would recommend",
-  "Solid purchase",
-  "Good quality",
-  "Worth it",
+  "Good Droviia order",
+  "Happy with Droviia overall",
+  "Solid buy from Droviia",
+  "Worth ordering from Droviia",
+  "Quality was there",
+  "Would recommend Droviia",
 ];
 
-const BODIES_5 = [
-  "Packaging was careful and the item looked even better in person. Checkout was quick and tracking updates were clear.",
-  "Arrived on time and matched the description. The whole process from cart to delivery felt straightforward.",
-  "Easy to buy, clear tracking, and the product feels well made. I would shop here again without hesitation.",
-  "Exactly what I needed. The photos were accurate and shipping was smooth from start to finish.",
-  "Gifted this and they loved it. Simple process from cart to door, and the packaging looked ready to give.",
-  "Clean store, fair prices, and the item was packed securely. No surprises, which is what I want from an online order.",
-  "Ordered in the evening and had tracking the next morning. Everything arrived undamaged and ready to use.",
-  "Checkout was simple, the total was clear before I paid, and the order showed up when promised.",
-];
+function fiveStarNote(product: string, city: string, state: string, index: number) {
+  const notes = [
+    `Bought a ${product} from Droviia for our home in ${city}, ${state}. It was packed carefully and matched the listing.`,
+    `Droviia shipped my ${product} to ${city} on time. Checkout was clear and the box arrived in good shape.`,
+    `Needed a ${product} here in ${state} and ordered it from Droviia. Tracking was easy to follow and it was ready to use.`,
+    `Our ${product} from Droviia showed up in ${city} exactly as described. I would order from them again.`,
+    `Placed a Droviia order for a ${product} while in ${state}. The price was fair and the shipping updates were useful.`,
+    `The ${product} I ordered from Droviia for ${city} feels well made. Support answered a question the same day.`,
+    `Shopping Droviia from ${state} was straightforward. The ${product} was packed securely and the photos were accurate.`,
+    `Gave a ${product} from Droviia as a gift in ${city}. The packaging looked neat and the order was simple to place.`,
+  ];
+  return notes[index % notes.length];
+}
 
-const BODIES_4 = [
-  "Solid quality for the price. Support answered my question the same day, which made the purchase easy.",
-  "Happy with the purchase. Quality is good. Delivery took a little longer than I hoped, but the item was worth the wait.",
-  "Good quality and a fair price. The site was easy to use. I would recommend it to a friend.",
-  "The item does the job and arrived in good shape. Shipping was a day later than the first estimate.",
-];
+function fourStarNote(product: string, city: string, state: string, index: number) {
+  const notes = [
+    `The ${product} from Droviia is good quality. Delivery to ${city}, ${state} took a day longer than the first estimate.`,
+    `Happy with my Droviia order in ${state}. The ${product} does the job. Shipping to ${city} was a little slower than I hoped.`,
+    `Solid ${product} for the price. Droviia kept me updated on the way to ${city}.`,
+    `I would recommend Droviia to someone in ${state}. The ${product} arrived safely, just not on the first promised day.`,
+  ];
+  return notes[index % notes.length];
+}
 
 function dateFor(index: number) {
   const day = new Date(Date.UTC(2026, 8, 20));
@@ -110,7 +129,7 @@ function dateFor(index: number) {
 }
 
 /** 77 five-star and 33 four-star notes. 517 / 110 = 4.7. */
-export function storeReviews(): GenericReview[] {
+function buildStoreReviews(): GenericReview[] {
   const ratings = [
     ...Array.from({ length: 77 }, () => 5),
     ...Array.from({ length: 33 }, () => 4),
@@ -120,17 +139,43 @@ export function storeReviews(): GenericReview[] {
     const [state, city] = STATES[index % STATES.length];
     const first = FIRST[index % FIRST.length];
     const last = LAST[(index * 3) % LAST.length];
+    const product = PRODUCTS[index % PRODUCTS.length];
     const five = rating === 5;
     const titles = five ? TITLES_5 : TITLES_4;
-    const bodies = five ? BODIES_5 : BODIES_4;
     return {
       reviewer: `${first} ${last}.`,
       rating,
       title: titles[index % titles.length],
-      content: bodies[index % bodies.length],
+      content: five
+        ? fiveStarNote(product, city, state, index)
+        : fourStarNote(product, city, state, index),
       date: dateFor(index),
       verified: true,
       location: `${city}, ${state}, USA`,
     };
   });
+}
+
+let cachedReviews: GenericReview[] | null = null;
+
+export function storeReviews(): GenericReview[] {
+  cachedReviews ??= buildStoreReviews();
+  return cachedReviews;
+}
+
+export function storeReviewSummary() {
+  const reviews = storeReviews();
+  const total = reviews.length;
+  const average =
+    total > 0
+      ? reviews.reduce((sum, review) => sum + review.rating, 0) / total
+      : 0;
+  const states = new Set(
+    reviews.map((review) => review.location.split(",")[1]?.trim() || ""),
+  );
+  return {
+    total,
+    average,
+    stateCount: states.size,
+  };
 }

@@ -73,10 +73,10 @@ export function ReviewsBoard({
             </p>
             <ReviewStars rating={average} size="lg" />
             <p className="text-sm text-muted-foreground">
-              {total} reviews
+              {total} reviews from 50 states
             </p>
             <p className="text-sm font-medium">
-              {recommend}% of shoppers recommend this store
+              {recommend}% of these shoppers recommend Droviia
             </p>
           </div>
 
@@ -238,7 +238,7 @@ export function ReviewsBoard({
       <div className="rounded-3xl border border-border bg-muted/40 px-6 py-8 text-center">
         <p className="font-display text-2xl">Shop the catalog</p>
         <p className="mx-auto mt-2 max-w-md text-pretty text-sm text-muted-foreground">
-          These notes are about ordering, packing, and delivery across the store.
+          These Droviia notes come from shoppers in cities across the United States.
         </p>
         <Link
           href="/products"
