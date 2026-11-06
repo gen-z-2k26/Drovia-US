@@ -20,7 +20,7 @@ export function HeroSection({ settings }: { settings: StoreSettings }) {
   return (
     <section
       aria-labelledby="hero-heading"
-      className="relative isolate overflow-hidden bg-[#101613] text-white"
+      className="relative isolate h-[calc(100svh-3.5rem)] overflow-hidden bg-[#101613] text-white sm:h-[calc(100svh-4rem)]"
     >
       <Image
         src="/brand/home-hero.jpg"
@@ -41,24 +41,24 @@ export function HeroSection({ settings }: { settings: StoreSettings }) {
 
       <div
         className={pageContainer(
-          "relative flex min-h-[calc(100svh-3.5rem)] flex-col justify-between gap-8 py-8 sm:min-h-[calc(100svh-4rem)] sm:py-10",
+          "relative flex h-full min-h-0 flex-col justify-between gap-[clamp(0.75rem,2svh,2rem)] py-[clamp(1rem,3svh,2.5rem)]",
         )}
       >
-        <div className="flex flex-1 flex-col justify-center">
-          <div className="max-w-2xl">
-            <p className="text-sm font-medium tracking-[0.18em] text-[#9DCFB0] uppercase">
+        <div className="flex min-h-0 flex-1 flex-col justify-center">
+          <div className="max-w-3xl">
+            <p className="text-xs font-medium tracking-[0.18em] text-[#9DCFB0] uppercase sm:text-sm">
               {settings.name}
             </p>
             <h1
               id="hero-heading"
-              className="font-display mt-3 max-w-xl text-balance text-4xl leading-[1.05] text-white sm:text-5xl xl:text-6xl"
+              className="font-display mt-[clamp(0.4rem,1.1svh,0.85rem)] max-w-3xl text-balance text-[clamp(2.35rem,min(5vw,8svh),5rem)] leading-[1.02] text-white"
             >
               {headline}
             </h1>
-            <p className="mt-4 max-w-lg text-pretty text-base leading-relaxed text-white/80 sm:text-lg">
+            <p className="mt-[clamp(0.55rem,1.4svh,1.1rem)] max-w-xl text-pretty text-[clamp(1.0625rem,min(1.35vw,2.5svh),1.35rem)] leading-snug text-white/80">
               {support}
             </p>
-            <div className="mt-6">
+            <div className="mt-[clamp(0.75rem,1.8svh,1.5rem)]">
               <Link
                 href="/products"
                 className={cn(
@@ -73,15 +73,15 @@ export function HeroSection({ settings }: { settings: StoreSettings }) {
         </div>
 
         <nav aria-label="Shop by need" className="shrink-0">
-          <p className="mb-3 text-xs font-medium tracking-[0.16em] text-white/70 uppercase">
+          <p className="mb-[clamp(0.35rem,0.8svh,0.75rem)] text-[11px] font-medium tracking-[0.16em] text-white/70 uppercase">
             Shop by need
           </p>
-          <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4">
+          <ul className="grid grid-cols-2 gap-2 xl:grid-cols-4">
             {collections.map((item, index) => (
               <li key={item.label}>
                 <Link
                   href={item.href}
-                  className="flex h-full items-center justify-between gap-3 rounded-xl border border-white/25 bg-[#101613]/55 px-4 py-3 text-white backdrop-blur-md transition-colors hover:bg-[#101613]/75"
+                  className="flex h-full items-center justify-between gap-3 rounded-xl border border-white/25 bg-[#101613]/55 px-3 py-[clamp(0.45rem,1.1svh,0.75rem)] text-white backdrop-blur-md transition-colors hover:bg-[#101613]/75 sm:px-4"
                 >
                   <span className="min-w-0">
                     <span className="block text-[11px] tracking-[0.14em] text-[#9DCFB0]">
