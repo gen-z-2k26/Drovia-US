@@ -56,7 +56,6 @@ export default async function HomePage() {
     }),
   );
   const featuredProducts = groups.flatMap((group) => group.products);
-  const landingCategories = groups.map((group) => group.category);
   const siteUrl = getSiteUrl(settings);
 
   const itemListLd = {
@@ -81,7 +80,6 @@ export default async function HomePage() {
       <HomeSections
         settings={{ ...settings, pages: defaultPages }}
         products={featuredProducts.map(toCardProduct)}
-        categories={landingCategories}
         categoryProducts={groups.map((group) => ({
           ...group,
           products: group.products.map(toCardProduct),

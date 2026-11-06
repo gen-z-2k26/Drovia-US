@@ -3,9 +3,11 @@ import { cn } from "@/lib/utils";
 export function BrandLogo({
   className,
   heightClass = "h-8",
+  alt = "DROVIIA",
 }: {
   className?: string;
   heightClass?: string;
+  alt?: string;
 }) {
   const imageClass = cn("h-auto w-auto max-w-full object-contain", heightClass);
 
@@ -13,13 +15,13 @@ export function BrandLogo({
     <span className={cn("inline-flex items-center", className)}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src="/brand/orvexo-logo-black.png"
-        alt="Orvexo Electronics"
+        src="/brand/droviia-logo-dark.png"
+        alt={alt}
         className={cn(imageClass, "dark:hidden")}
       />
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src="/brand/orvexo-logo-white.png"
+        src="/brand/droviia-logo-white.png"
         alt=""
         className={cn(imageClass, "hidden dark:block")}
       />

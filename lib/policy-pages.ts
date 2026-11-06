@@ -22,7 +22,7 @@ export const POLICY_PAGES: PolicyPageDef[] = [
   {
     slug: "shipping-policy",
     title: "Shipping & Delivery",
-    description: "Free standard shipping, processing times, and delivery estimates for Orvexo Electronics.",
+    description: "Free standard shipping, processing times, and delivery estimates for DROVIIA.",
     intro:
       "Eligible domestic orders receive free standard shipping, with no minimum purchase requirement.",
     groupTitles: ["Shipping and delivery"],
@@ -46,7 +46,7 @@ export const POLICY_PAGES: PolicyPageDef[] = [
   {
     slug: "payment-policy",
     title: "Payment Options",
-    description: "Checkout methods, currency, tax, and payment security at Orvexo Electronics.",
+    description: "Checkout methods, currency, tax, and payment security at DROVIIA.",
     intro:
       "Prices and checkout payments are displayed in United States Dollars (USD). The methods shown at checkout are the options available for your purchase.",
     groupTitles: ["Payments and checkout"],
@@ -71,17 +71,17 @@ export const POLICY_PAGES: PolicyPageDef[] = [
     slug: "privacy-policy",
     title: "Privacy Policy",
     description:
-      "How Orvexo Electronics collects, uses, and shares information when you shop with us.",
+      "How DROVIIA collects, uses, and shares information when you shop with us.",
     intro:
-      "This policy explains how Orvexo Electronics, operated by Universal Lighting Technologies, handles information when you browse the store, place an order, or contact support.",
+      "This policy explains how DROVIIA, operated by Modern Closet Spaces LLC, handles information when you browse the store, place an order, or contact support.",
     groupTitles: [],
     designed: true,
     sections: [
       {
         title: "Who we are",
         paragraphs: [
-          "Orvexo Electronics is an online store operated by Universal Lighting Technologies. Our business correspondence address is 1430 Wall Triana Hwy SW, Madison, AL 35756, USA. That address is not a retail showroom or an authorized return location.",
-          "Questions about this policy can be sent to info@orvexo.us or +1 (256) 772-8820. Live chat is available 24/7. Phone support hours are Monday-Friday, 9:00 AM-5:00 PM Central Time.",
+          "DROVIIA is an online store operated by Modern Closet Spaces LLC. Our business correspondence address is 1320 W El Segundo Blvd Ste E, Gardena, CA 90247, United States. That address is not a retail showroom or an authorized return location.",
+          "Questions about this policy can be sent to info@droviia.us or +1 (424) 329-0223. Live chat is available 24/7. Phone support hours are Monday-Friday, 9:00 AM-5:00 PM Pacific Time.",
         ],
       },
       {
@@ -131,7 +131,7 @@ export const POLICY_PAGES: PolicyPageDef[] = [
       {
         title: "Your privacy choices",
         paragraphs: [
-          "You may contact info@orvexo.us with a privacy-related request, including access, correction, or deletion where applicable law provides those rights. We will review the request and respond according to the laws that apply to your situation.",
+          "You may contact info@droviia.us with a privacy-related request, including access, correction, or deletion where applicable law provides those rights. We will review the request and respond according to the laws that apply to your situation.",
           "California residents and other US shoppers can also visit the Your Privacy Choices page on this site.",
         ],
       },
@@ -141,7 +141,7 @@ export const POLICY_PAGES: PolicyPageDef[] = [
     slug: "terms-of-service",
     title: "Terms of Service",
     description:
-      "The purchasing, shipping, return, and payment terms that apply when you shop at Orvexo Electronics.",
+      "The purchasing, shipping, return, and payment terms that apply when you shop at DROVIIA.",
     intro:
       "By browsing this store or placing an order you agree to the terms published here, together with our shipping, return, payment, and privacy pages.",
     groupTitles: [],
@@ -150,7 +150,7 @@ export const POLICY_PAGES: PolicyPageDef[] = [
       {
         title: "The store",
         paragraphs: [
-          "Orvexo Electronics is a US-focused online electronics store operated by Universal Lighting Technologies. We currently fulfill eligible orders to addresses within the United States. We do not operate a public retail showroom.",
+          "DROVIIA is a US-focused online electronics store operated by Modern Closet Spaces LLC. We currently fulfill eligible orders to addresses within the United States. We do not operate a public retail showroom.",
         ],
       },
       {
@@ -170,7 +170,7 @@ export const POLICY_PAGES: PolicyPageDef[] = [
       {
         title: "Shipping",
         paragraphs: [
-          "Eligible domestic orders receive free standard shipping, with no minimum purchase requirement. Typical processing is 1-2 business days, followed by an estimated 3-7 business days in transit, for a total of about 4-9 business days. The order cut-off is 4:00 PM Central Time.",
+          "Eligible domestic orders receive free standard shipping, with no minimum purchase requirement. Typical processing is 1-2 business days, followed by an estimated 3-7 business days in transit, for a total of about 4-9 business days. The order cut-off is 4:00 PM Pacific Time.",
           "Delivery estimates can change because of carrier conditions, holidays, weather, or other events outside our control.",
         ],
       },
@@ -191,13 +191,13 @@ export const POLICY_PAGES: PolicyPageDef[] = [
       {
         title: "Limitation of liability",
         paragraphs: [
-          "To the fullest extent permitted by law, Universal Lighting Technologies and Orvexo Electronics are not liable for indirect, incidental, or consequential damages arising from your use of the site or from products purchased through it. Nothing in these terms limits rights you have under applicable consumer law.",
+          "To the fullest extent permitted by law, Modern Closet Spaces LLC and DROVIIA are not liable for indirect, incidental, or consequential damages arising from your use of the site or from products purchased through it. Nothing in these terms limits rights you have under applicable consumer law.",
         ],
       },
       {
         title: "Contact",
         paragraphs: [
-          "Email info@orvexo.us, call +1 (256) 772-8820, or use live chat, available 24/7. Business hours are Monday-Friday, 9:00 AM-5:00 PM Central Time.",
+          "Email info@droviia.us, call +1 (424) 329-0223, or use live chat, available 24/7. Business hours are Monday-Friday, 9:00 AM-5:00 PM Pacific Time.",
         ],
       },
     ],
@@ -205,7 +205,7 @@ export const POLICY_PAGES: PolicyPageDef[] = [
   {
     slug: "cookie-policy",
     title: "Cookie Policy",
-    description: "How cookies are used on the Orvexo Electronics storefront.",
+    description: "How cookies are used on the DROVIIA storefront.",
     intro:
       "Essential cookies may support shopping carts, checkout, security, and other website functions. Additional cookies depend on the services enabled.",
     groupTitles: ["Accounts, privacy, and security"],
@@ -213,20 +213,20 @@ export const POLICY_PAGES: PolicyPageDef[] = [
   {
     slug: "legal-notice",
     title: "Legal Notice",
-    description: "Business identity and correspondence address for Orvexo Electronics.",
+    description: "Business identity and correspondence address for DROVIIA.",
     intro:
-      "Orvexo Electronics is operated by Universal Lighting Technologies.",
+      "DROVIIA is operated by Modern Closet Spaces LLC.",
     groupTitles: ["General questions"],
     paragraphs: [
-      "Business address: 1430 Wall Triana Hwy SW, Madison, AL 35756, United States. This address is for business correspondence and is not a retail showroom or an authorized return location.",
-      "Website: https://orvexo.us. Email: info@orvexo.us. Phone: +1 (256) 772-8820.",
+      "Business address: 1320 W El Segundo Blvd Ste E, Gardena, CA 90247, United States. This address is for business correspondence and is not a retail showroom or an authorized return location.",
+      "Website: https://droviia.us. Email: info@droviia.us. Phone: +1 (424) 329-0223.",
     ],
   },
   {
     slug: "accessibility-statement",
     title: "Accessibility Statement",
     description:
-      "How we aim to keep the Orvexo Electronics store easier to navigate, and how to ask for help.",
+      "How we aim to keep the DROVIIA store easier to navigate, and how to ask for help.",
     intro:
       "We want our website and shopping information to be easier for customers to navigate and understand. This statement describes that aim and how to reach us if a page, listing, or checkout step is difficult to use.",
     groupTitles: [],
@@ -235,7 +235,7 @@ export const POLICY_PAGES: PolicyPageDef[] = [
       {
         title: "Our commitment",
         paragraphs: [
-          "Orvexo Electronics, operated by Universal Lighting Technologies, is working to keep product information, policies, and checkout steps clearer over time. We treat accessibility as an ongoing effort, not a one-time audit claim.",
+          "DROVIIA, operated by Modern Closet Spaces LLC, is working to keep product information, policies, and checkout steps clearer over time. We treat accessibility as an ongoing effort, not a one-time audit claim.",
         ],
       },
       {
@@ -259,8 +259,8 @@ export const POLICY_PAGES: PolicyPageDef[] = [
       {
         title: "Request assistance",
         paragraphs: [
-          "If you have trouble using a page, product listing, or checkout step, email info@orvexo.us or call +1 (256) 772-8820. Tell us the page you were on and what you were trying to do. We will help you complete your request.",
-          "Live chat is available 24/7. Phone support hours are Monday-Friday, 9:00 AM-5:00 PM Central Time. Our business address is 1430 Wall Triana Hwy SW, Madison, AL 35756, USA, for correspondence only.",
+          "If you have trouble using a page, product listing, or checkout step, email info@droviia.us or call +1 (424) 329-0223. Tell us the page you were on and what you were trying to do. We will help you complete your request.",
+          "Live chat is available 24/7. Phone support hours are Monday-Friday, 9:00 AM-5:00 PM Pacific Time. Our business address is 1320 W El Segundo Blvd Ste E, Gardena, CA 90247, United States, for correspondence only.",
         ],
       },
     ],
@@ -268,9 +268,9 @@ export const POLICY_PAGES: PolicyPageDef[] = [
   {
     slug: "your-privacy-choices",
     title: "Your Privacy Choices",
-    description: "How to ask about personal data used for your Orvexo Electronics orders.",
+    description: "How to ask about personal data used for your DROVIIA orders.",
     intro:
-      "You may contact info@orvexo.us with a privacy-related request. Applicable rights depend on relevant privacy laws.",
+      "You may contact info@droviia.us with a privacy-related request. Applicable rights depend on relevant privacy laws.",
     groupTitles: ["Accounts, privacy, and security"],
   },
 ];

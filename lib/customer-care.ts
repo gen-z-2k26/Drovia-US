@@ -26,6 +26,8 @@ export type CarePage = {
   intro: string[];
   description: string;
   sections: CareSection[];
+  /** Source lines in order, shown as written. */
+  lines?: string[];
 };
 
 const PAGES = pagesJson.pages as CarePage[];
@@ -81,14 +83,25 @@ export const CARE_LABEL_HREFS: Record<string, string> = {
   "Contact Customer Support": "/contact-us",
   "Share Your Feedback": "/contact-us",
   "Shop Orvexo Electronics": "/products",
+  "Shop All": "/products",
   "About Us": "/about-us",
+  "Our Commitment": "/our-commitment",
+  "Shipping & Delivery Policy": "/shipping-policy",
+  "Shipping & Delivery": "/shipping-policy",
+  "Return & Refund Policy": "/return-and-refund-policy",
+  "Returns & Refunds Policy": "/return-and-refund-policy",
+  "Order Cancellation Policy": "/cancellation-policy",
+  "Payment Methods": "/payment-policy",
+  "Payment Methods & Payment Policy": "/payment-policy",
+  "Warranty & Product Support": "/warranty",
+  "Order Help Center": "/order-help-center",
 };
 
 export function hrefForAbsoluteUrl(url: string) {
   try {
     const parsed = new URL(url);
     const host = parsed.hostname.replace(/^www\./, "");
-    if (host === "orvexo.us") {
+    if (host === "droviia.us" || host === "orvexo.us") {
       const path = parsed.pathname.replace(/\/$/, "") || "/";
       return path;
     }

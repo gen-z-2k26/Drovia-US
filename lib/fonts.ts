@@ -17,7 +17,8 @@ const SYSTEM_FONTS = new Set([
 export function googleFontStylesheetUrl(families: string[]) {
   const unique = [...new Set(families.map((name) => name.trim()).filter(Boolean))];
   const google = unique.filter(
-    (name) => !SYSTEM_FONTS.has(name.toLowerCase()),
+    (name) =>
+      !SYSTEM_FONTS.has(name.toLowerCase()) && !name.startsWith("var("),
   );
   if (!google.length) return "";
   const query = google
