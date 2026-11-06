@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Menu, ShoppingBag, X } from "lucide-react";
+import { Menu, ShoppingBag, Star, X } from "lucide-react";
 import { Suspense, useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,9 @@ import { useCartStore } from "@/lib/cart-store";
 import { useStore } from "@/lib/store-context";
 import { useMotionEnabled } from "@/lib/use-motion-enabled";
 import { BrandLogo } from "@/components/BrandLogo";
+import { ReviewStars } from "@/components/ReviewStars";
 import { pageContainer } from "@/lib/layout";
+import { storeReviewSummary } from "@/lib/store-reviews";
 import { cn } from "@/lib/utils";
 
 const fallbackNav = [
@@ -22,6 +24,39 @@ const fallbackNav = [
   { href: "/faqs", label: "FAQs" },
   { href: "/contact-us", label: "Contact" },
 ];
+
+function HeaderReviewsLink({
+  onNavigate,
+  className,
+  compact = false,
+}: {
+  onNavigate?: () => void;
+  className?: string;
+  compact?: boolean;
+}) {
+  const { average, total } = storeReviewSummary();
+  const score = average.toFixed(1);
+
+  return (
+    <Link
+      href="/reviews"
+      onClick={onNavigate}
+      aria-label={`${score} out of 5 from ${total} Droviia reviews across the United States. Read all reviews`}
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground",
+        className,
+      )}
+    >
+      {compact ? (
+        <Star className="size-3.5 fill-amber-400 text-amber-400" aria-hidden />
+      ) : (
+        <ReviewStars rating={average} size="sm" decorative />
+      )}
+      <span className="font-medium text-foreground tabular-nums">{score}</span>
+      <span className="tabular-nums">{compact ? total : `${total} reviews`}</span>
+    </Link>
+  );
+}
 
 export function Header() {
   const { settings } = useStore();
@@ -83,12 +118,15 @@ export function Header() {
               {link.label}
             </Link>
           ))}
+          <HeaderReviewsLink className="ml-1" />
         </nav>
 
         <div
           data-header-chrome
           className="ml-auto flex min-w-0 shrink-0 items-center justify-end gap-1 sm:gap-2"
         >
+          <HeaderReviewsLink compact className="px-1.5 lg:hidden" />
+
           <Suspense
             fallback={
               <div className="size-10 rounded-xl border border-border bg-background" />
@@ -141,6 +179,10 @@ export function Header() {
                 {item.label}
               </Link>
             ))}
+            <HeaderReviewsLink
+              onNavigate={() => setMenuOpen(false)}
+              className="mt-1 justify-start px-3 py-2.5"
+            />
           </nav>
           <div className="mt-3 flex items-center justify-between border-t border-border px-3 pt-3 sm:hidden">
             <span className="text-sm text-muted-foreground">Appearance</span>

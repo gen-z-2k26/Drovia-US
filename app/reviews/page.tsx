@@ -3,27 +3,28 @@ import { pageContainer } from "@/lib/layout";
 import { getSiteSettings } from "@/lib/api";
 import { PageHero } from "@/components/PageHero";
 import { ReviewsBoard } from "@/components/ReviewsBoard";
-import { storeReviews } from "@/lib/store-reviews";
+import { storeReviewSummary, storeReviews } from "@/lib/store-reviews";
 
 export const revalidate = 60;
 
 export const metadata: Metadata = {
   title: "Customer reviews",
   description:
-    "Featured shopper notes about ordering, packing, and delivery across the store.",
+    "110 Droviia reviews from shoppers across all 50 U.S. states, covering orders, packing, and delivery.",
 };
 
 export default async function ReviewsPage() {
   const settings = await getSiteSettings();
   const reviews = storeReviews();
+  const { total, stateCount } = storeReviewSummary();
 
   return (
     <div className={pageContainer("py-10 sm:py-14")}>
       <PageHero
         current="Reviews"
-        eyebrow={`${settings.name} · Customer reviews`}
-        title="What shoppers say"
-        description="Featured notes about checkout, packing, and delivery from across the shop. These are not tied to a single product. Filter by star rating or sort by date."
+        eyebrow={`${settings.name} · United States`}
+        title={`${total} reviews from across the USA`}
+        description={`${total} shopper reviews of ${settings.name} from ${stateCount} states. People wrote about the appliances and personal-care items they ordered, plus packing and delivery to their city. Filter by star rating or sort by date.`}
       />
 
       <div className="mt-10">

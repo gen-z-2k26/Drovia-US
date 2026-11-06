@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { feedStoreOrigin, rewriteProductLinks } from "@/lib/ctx-feed";
 
 export const dynamic = "force-dynamic";
 
@@ -8,32 +9,6 @@ function originOf(value: string) {
   } catch {
     return "";
   }
-}
-
-const STORE_FALLBACK = "https://droviia.us";
-
-/** CTX writes WordPress permalinks. Keep media on that host; point product links at the storefront. */
-function rewriteProductLinks(xml: string, wpOrigin: string, storeOrigin: string) {
-  if (!wpOrigin || !storeOrigin || wpOrigin === storeOrigin) return xml;
-  const store = new URL(storeOrigin);
-
-  return xml.replace(
-    /<((?:g:)?)(link|canonical_link)>\s*(?:<!\[CDATA\[)?\s*([^<\]]+?)\s*(?:\]\]>)?\s*<\/\1\2>/g,
-    (match, ns: string, name: string, raw: string) => {
-      let url: URL;
-      try {
-        url = new URL(raw.trim());
-      } catch {
-        return match;
-      }
-      if (url.origin !== wpOrigin) return match;
-      if (!url.pathname.startsWith("/product/") && url.pathname !== "/") return match;
-      url.protocol = store.protocol;
-      url.host = store.host;
-      url.pathname = url.pathname.replace(/^\/product\//, "/products/");
-      return `<${ns}${name}>${url.toString()}</${ns}${name}>`;
-    },
-  );
 }
 
 export async function GET() {
@@ -63,9 +38,7 @@ export async function GET() {
   }
 
   const wpOrigin = originOf(process.env.WC_URL?.trim() || feedUrl);
-  const storeOrigin = originOf(
-    process.env.NEXT_PUBLIC_SITE_URL?.trim() || STORE_FALLBACK,
-  );
+  const storeOrigin = feedStoreOrigin(wpOrigin, process.env.NEXT_PUBLIC_SITE_URL);
   const body = rewriteProductLinks(await upstream.text(), wpOrigin, storeOrigin);
   return new NextResponse(body, {
     status: 200,

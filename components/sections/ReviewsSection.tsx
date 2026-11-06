@@ -1,11 +1,14 @@
+import Link from "next/link";
 import type { StoreSettings } from "@/lib/types";
 import { ReviewStars } from "@/components/ReviewStars";
 import { SectionHeader } from "@/components/sections/SectionHeader";
 import { pageContainer, sectionStackClass, sectionYClass } from "@/lib/layout";
+import { storeReviewSummary, storeReviews } from "@/lib/store-reviews";
 import { cn } from "@/lib/utils";
 
 export function ReviewsSection({ settings }: { settings: StoreSettings }) {
-  const reviews = (settings.productPage?.genericReviews ?? []).slice(0, 3);
+  const reviews = storeReviews().slice(0, 3);
+  const { total } = storeReviewSummary();
   if (reviews.length === 0) return null;
 
   return (
@@ -17,8 +20,16 @@ export function ReviewsSection({ settings }: { settings: StoreSettings }) {
         <SectionHeader
           eyebrow="Shopper notes"
           title="A few words from recent orders"
-          subtitle="The same notes shown on product pages, from shoppers who bought through DROVIIA."
+          subtitle={`${total} ${settings.name} reviews from shoppers across the United States.`}
           titleId="reviews-heading"
+          action={
+            <Link
+              href="/reviews"
+              className="text-sm font-medium text-primary underline-offset-4 hover:underline"
+            >
+              Read all {total} reviews
+            </Link>
+          }
         />
         <ul className="grid gap-4 lg:grid-cols-3">
           {reviews.map((review) => (

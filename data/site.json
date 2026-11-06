@@ -41,6 +41,7 @@
         "links": [
           { "label": "Home", "href": "/" },
           { "label": "Shop All", "href": "/products" },
+          { "label": "Reviews", "href": "/reviews" },
           { "label": "Categories", "href": "/products" },
           { "label": "About Us", "href": "/about-us" },
           { "label": "Our Commitment", "href": "/our-commitment" },

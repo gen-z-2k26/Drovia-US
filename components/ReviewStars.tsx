@@ -5,10 +5,12 @@ export function ReviewStars({
   rating,
   size = "md",
   className,
+  decorative = false,
 }: {
   rating: number;
   size?: "sm" | "md" | "lg";
   className?: string;
+  decorative?: boolean;
 }) {
   const clamped = Math.min(5, Math.max(0, rating));
   const iconClass =
@@ -17,7 +19,8 @@ export function ReviewStars({
   return (
     <span
       className={cn("inline-flex items-center gap-0.5", className)}
-      aria-label={`${clamped.toFixed(1)} out of 5 stars`}
+      aria-hidden={decorative || undefined}
+      aria-label={decorative ? undefined : `${clamped.toFixed(1)} out of 5 stars`}
     >
       {Array.from({ length: 5 }, (_, index) => {
         const filled = clamped >= index + 1;
