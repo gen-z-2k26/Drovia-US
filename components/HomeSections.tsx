@@ -6,6 +6,7 @@ import { FeaturedProductsSection } from "@/components/sections/FeaturedProductsS
 import { StepsSection } from "@/components/sections/StepsSection";
 import { CommitmentSection } from "@/components/sections/CommitmentSection";
 import { StorySection } from "@/components/sections/StorySection";
+import { ReviewsSection } from "@/components/sections/ReviewsSection";
 import { SupportSection } from "@/components/sections/SupportSection";
 import { FaqPreviewSection } from "@/components/sections/FaqPreviewSection";
 import { NewsletterSection } from "@/components/sections/NewsletterSection";
@@ -29,9 +30,10 @@ export function HomeSections({
       <NeedsSection />
       <TrustStripSection />
       <FeaturedProductsSection groups={categoryProducts} products={products} />
-      <StepsSection />
-      <CommitmentSection />
       <StorySection settings={settings} />
+      <StepsSection />
+      <ReviewsSection settings={settings} />
+      <CommitmentSection />
       <SupportSection settings={settings} />
       <FaqPreviewSection />
       <NewsletterSection settings={settings} />

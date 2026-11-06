@@ -1,4 +1,6 @@
+import Image from "next/image";
 import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 import type { StoreSettings } from "@/lib/types";
 import { buttonVariants } from "@/components/ui/button";
 import { pageContainer } from "@/lib/layout";
@@ -16,59 +18,85 @@ export function HeroSection({ settings }: { settings: StoreSettings }) {
   const support = settings.hero?.support || settings.tagline;
 
   return (
-    <section className="border-b border-border bg-background">
+    <section
+      aria-labelledby="hero-heading"
+      className="relative isolate overflow-hidden bg-[#101613] text-white"
+    >
+      <Image
+        src="/brand/home-hero.jpg"
+        alt="Sunlit kitchen with a refrigerator, range, and kettle"
+        fill
+        priority
+        sizes="100vw"
+        className="object-cover object-[72%_center]"
+      />
+      <div
+        aria-hidden
+        className="absolute inset-0 bg-gradient-to-r from-[#101613]/92 via-[#101613]/70 to-[#101613]/25"
+      />
+      <div
+        aria-hidden
+        className="absolute inset-0 bg-gradient-to-t from-[#101613]/85 via-[#101613]/20 to-[#101613]/25"
+      />
+
       <div
         className={pageContainer(
-          "grid items-end gap-10 py-14 sm:py-20 lg:grid-cols-[minmax(0,1.3fr)_minmax(18rem,0.7fr)] lg:py-24",
+          "relative flex min-h-[calc(100svh-3.5rem)] flex-col justify-between gap-8 py-8 sm:min-h-[calc(100svh-4rem)] sm:py-10",
         )}
       >
-        <div className="max-w-3xl">
-          <p className="text-sm font-medium tracking-[0.18em] text-accent uppercase">
-            {settings.name}
-          </p>
-          <h1 className="font-display mt-4 text-balance text-4xl leading-[1.05] text-foreground sm:text-6xl">
-            {headline}
-          </h1>
-          <p className="mt-5 max-w-xl text-pretty text-lg leading-relaxed text-muted-foreground">
-            {support}
-          </p>
-          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-            <Link
-              href="/products"
-              className={cn(buttonVariants({ size: "lg" }), "sm:min-w-36")}
+        <div className="flex flex-1 flex-col justify-center">
+          <div className="max-w-2xl">
+            <p className="text-sm font-medium tracking-[0.18em] text-[#9DCFB0] uppercase">
+              {settings.name}
+            </p>
+            <h1
+              id="hero-heading"
+              className="font-display mt-3 max-w-xl text-balance text-4xl leading-[1.05] text-white sm:text-5xl xl:text-6xl"
             >
-              Shop all
-            </Link>
-            <Link
-              href="/about-us"
-              className={cn(
-                buttonVariants({ size: "lg", variant: "outline" }),
-                "sm:min-w-36",
-              )}
-            >
-              About DROVIIA
-            </Link>
+              {headline}
+            </h1>
+            <p className="mt-4 max-w-lg text-pretty text-base leading-relaxed text-white/80 sm:text-lg">
+              {support}
+            </p>
+            <div className="mt-6">
+              <Link
+                href="/products"
+                className={cn(
+                  buttonVariants({ size: "lg" }),
+                  "bg-[#9DCFB0] text-[#101613] hover:bg-[#b7dcc4] sm:min-w-40",
+                )}
+              >
+                Shop all
+              </Link>
+            </div>
           </div>
         </div>
 
-        <div className="rounded-lg bg-card p-6 sm:p-8">
-          <p className="text-sm font-medium text-accent">Shop by need</p>
-          <ul className="mt-4 space-y-1">
-            {collections.map((item) => (
+        <nav aria-label="Shop by need" className="shrink-0">
+          <p className="mb-3 text-xs font-medium tracking-[0.16em] text-white/70 uppercase">
+            Shop by need
+          </p>
+          <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4">
+            {collections.map((item, index) => (
               <li key={item.label}>
                 <Link
                   href={item.href}
-                  className="flex items-center justify-between border-b border-border py-3 text-base text-foreground transition-colors last:border-b-0 hover:text-accent"
+                  className="flex h-full items-center justify-between gap-3 rounded-xl border border-white/25 bg-[#101613]/55 px-4 py-3 text-white backdrop-blur-md transition-colors hover:bg-[#101613]/75"
                 >
-                  <span>{item.label}</span>
-                  <span aria-hidden className="text-muted-foreground">
-                    →
+                  <span className="min-w-0">
+                    <span className="block text-[11px] tracking-[0.14em] text-[#9DCFB0]">
+                      {String(index + 1).padStart(2, "0")}
+                    </span>
+                    <span className="mt-0.5 block text-sm font-medium">
+                      {item.label}
+                    </span>
                   </span>
+                  <ArrowRight className="size-4 shrink-0 text-white/80" aria-hidden />
                 </Link>
               </li>
             ))}
           </ul>
-        </div>
+        </nav>
       </div>
     </section>
   );
