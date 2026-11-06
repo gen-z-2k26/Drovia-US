@@ -42,29 +42,33 @@ export default async function TrackOrderPage({
 
   return (
     <div className="pb-16">
-      <section className="border-b border-primary/50 bg-primary text-primary-foreground">
-        <div className={pageContainer("py-12 text-center sm:py-16")}>
-          <p className="text-xs font-semibold tracking-[0.22em] uppercase text-primary-foreground/70">
+      <section className="relative overflow-hidden bg-[#101613] text-white">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(157,207,176,0.35),transparent_52%)]"
+        />
+        <div className={pageContainer("relative py-14 sm:py-20")}>
+          <p className="text-xs font-semibold tracking-[0.2em] text-[#9DCFB0] uppercase">
             {settings.name}
           </p>
-          <h1 className="mt-3 font-display text-4xl sm:text-6xl">
+          <h1 className="mt-4 max-w-3xl font-display text-4xl text-white sm:text-6xl">
             Track your order
           </h1>
-          <p className="mx-auto mt-4 max-w-lg text-pretty text-base text-primary-foreground/85">
+          <p className="mt-5 max-w-xl text-pretty text-lg leading-relaxed text-white/80">
             Look up a guest order with the number, key, and email from your confirmation.
             Phone support is {settings.contact.openingHours}. Live chat is available 24/7.
           </p>
         </div>
       </section>
 
-      <div className={pageContainer("space-y-8 bg-primary/15 pt-8 sm:pt-10")}>
+      <div className={pageContainer("space-y-8 bg-background py-10 sm:py-14")}>
         <ol className="grid gap-3 sm:grid-cols-3">
           {steps.map((step, index) => (
             <li
               key={step.title}
-              className="rounded-2xl border border-primary/40 bg-card p-5"
+              className="rounded-2xl border border-border bg-card p-5 shadow-sm"
             >
-              <span className="flex size-9 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
+              <span className="flex size-9 items-center justify-center rounded-full bg-[#101613] text-sm font-semibold text-[#9DCFB0]">
                 {index + 1}
               </span>
               <p className="mt-4 flex items-center gap-2 text-sm font-semibold text-foreground">
