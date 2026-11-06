@@ -171,7 +171,7 @@ export function storeReviewSummary() {
       ? reviews.reduce((sum, review) => sum + review.rating, 0) / total
       : 0;
   const states = new Set(
-    reviews.map((review) => review.location.split(",")[1]?.trim() || ""),
+    reviews.map((review) => review.location?.split(",")[1]?.trim() || ""),
   );
   return {
     total,
