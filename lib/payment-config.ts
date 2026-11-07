@@ -115,10 +115,12 @@ export type PaymentSettingsInput = {
 
 const BLOB_PATH = "payments/config.enc";
 const PAYMENT_CONFIG_TAG = "payment-config";
-/** Shared across pages. A warm instance does not call Blob again during this window. */
-const MEMORY_TTL_MS = 15_000;
-/** One shared Blob read per hour, plus one more after each admin save. */
-const BLOB_REVALIDATE_SECONDS = 60 * 60;
+/**
+ * Checkout and other dynamic routes skip the Next.js data cache, so this
+ * process-local copy is what stops those requests from calling Blob.
+ * Admin saves on this instance replace it immediately.
+ */
+const MEMORY_TTL_MS = 60 * 60 * 1000;
 
 type EnvelopeCache = { found: false } | { found: true; raw: string };
 
@@ -202,23 +204,20 @@ function decryptStored(key: Buffer, raw: string) {
 }
 
 /**
- * Private reads with useCache:false bypass the Blob CDN and each count as a
- * simple operation. Product pages and checkout call this on every view, so the
- * download itself is cached for an hour and only refreshed after an admin save.
+ * Held until an admin save calls updateTag. Do not pass useCache:false:
+ * that query flag forces a Blob CDN miss, and every miss counts as a
+ * simple operation on the Hobby plan.
  */
 const readEnvelopeCached = unstable_cache(
   async (): Promise<EnvelopeCache> => {
-    const result = await get(BLOB_PATH, {
-      access: "private",
-      useCache: false,
-    });
+    const result = await get(BLOB_PATH, { access: "private" });
     if (!result || result.statusCode !== 200 || !result.stream) {
       return { found: false };
     }
     return { found: true, raw: await new Response(result.stream).text() };
   },
   ["payments-config-envelope"],
-  { revalidate: BLOB_REVALIDATE_SECONDS, tags: [PAYMENT_CONFIG_TAG] },
+  { revalidate: false, tags: [PAYMENT_CONFIG_TAG] },
 );
 
 function rememberEnvelope(raw: string | null) {
@@ -466,7 +465,7 @@ async function writeStored(config: StoredPaymentConfig) {
     addRandomSuffix: false,
     allowOverwrite: true,
     contentType: "application/json",
-    cacheControlMaxAge: 60,
+    cacheControlMaxAge: 300,
   });
   rememberEnvelope(body);
   invalidatePaymentConfigCache();
