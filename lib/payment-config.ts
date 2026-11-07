@@ -3,6 +3,7 @@ import {
   createDecipheriv,
   randomBytes,
 } from "crypto";
+import { revalidateTag, unstable_cache, updateTag } from "next/cache";
 import { get, put } from "@vercel/blob";
 
 export type PaymentMode = "sandbox" | "live";
@@ -113,8 +114,16 @@ export type PaymentSettingsInput = {
 };
 
 const BLOB_PATH = "payments/config.enc";
+const PAYMENT_CONFIG_TAG = "payment-config";
+/** Shared across pages. A warm instance does not call Blob again during this window. */
+const MEMORY_TTL_MS = 15_000;
+/** One shared Blob read per hour, plus one more after each admin save. */
+const BLOB_REVALIDATE_SECONDS = 60 * 60;
 
-let cache: { etag: string; config: StoredPaymentConfig } | null = null;
+type EnvelopeCache = { found: false } | { found: true; raw: string };
+
+let memory: { raw: string | null; at: number } | null = null;
+let inflight: Promise<string | null> | null = null;
 
 function encryptionKey() {
   const raw = process.env.PAYMENT_CONFIG_KEY?.trim() || "";
@@ -192,37 +201,77 @@ function decryptStored(key: Buffer, raw: string) {
   return normalizeStored(JSON.parse(json));
 }
 
-async function readStored(): Promise<StoredPaymentConfig | null> {
-  const key = encryptionKey();
-  if (!key || !blobTokenReady()) return null;
-  let result;
-  try {
-    result = await get(BLOB_PATH, {
+/**
+ * Private reads with useCache:false bypass the Blob CDN and each count as a
+ * simple operation. Product pages and checkout call this on every view, so the
+ * download itself is cached for an hour and only refreshed after an admin save.
+ */
+const readEnvelopeCached = unstable_cache(
+  async (): Promise<EnvelopeCache> => {
+    const result = await get(BLOB_PATH, {
       access: "private",
       useCache: false,
-      ifNoneMatch: cache?.etag || undefined,
     });
-  } catch {
-    return cache?.config ?? null;
+    if (!result || result.statusCode !== 200 || !result.stream) {
+      return { found: false };
+    }
+    return { found: true, raw: await new Response(result.stream).text() };
+  },
+  ["payments-config-envelope"],
+  { revalidate: BLOB_REVALIDATE_SECONDS, tags: [PAYMENT_CONFIG_TAG] },
+);
+
+function rememberEnvelope(raw: string | null) {
+  memory = { raw, at: Date.now() };
+}
+
+async function readEnvelope(): Promise<string | null> {
+  if (!blobTokenReady()) return null;
+  if (memory && Date.now() - memory.at < MEMORY_TTL_MS) return memory.raw;
+  if (!inflight) {
+    inflight = readEnvelopeCached()
+      .then((entry) => {
+        const raw = entry.found ? entry.raw : null;
+        rememberEnvelope(raw);
+        return raw;
+      })
+      .catch(() => {
+        if (memory) {
+          memory = { raw: memory.raw, at: Date.now() };
+          return memory.raw;
+        }
+        rememberEnvelope(null);
+        return null;
+      })
+      .finally(() => {
+        inflight = null;
+      });
   }
-  if (!result) {
-    cache = null;
+  return inflight;
+}
+
+function invalidatePaymentConfigCache() {
+  try {
+    updateTag(PAYMENT_CONFIG_TAG);
+  } catch {
+    try {
+      revalidateTag(PAYMENT_CONFIG_TAG, { expire: 0 });
+    } catch {
+      // This instance already has the new envelope in memory.
+    }
+  }
+}
+
+async function readStored(): Promise<StoredPaymentConfig | null> {
+  const key = encryptionKey();
+  if (!key) return null;
+  const raw = await readEnvelope();
+  if (!raw) return null;
+  try {
+    return decryptStored(key, raw);
+  } catch {
     return null;
   }
-  if (result.statusCode === 304) {
-    if (cache) return cache.config;
-    const fresh = await get(BLOB_PATH, { access: "private", useCache: false });
-    if (!fresh || fresh.statusCode !== 200 || !fresh.stream) return null;
-    const raw = await new Response(fresh.stream).text();
-    const config = decryptStored(key, raw);
-    cache = { etag: fresh.blob.etag, config };
-    return config;
-  }
-  if (!result.stream) return null;
-  const raw = await new Response(result.stream).text();
-  const config = decryptStored(key, raw);
-  cache = { etag: result.blob.etag, config };
-  return config;
 }
 
 function normalizeStored(value: Partial<StoredPaymentConfig>): StoredPaymentConfig {
@@ -412,14 +461,15 @@ async function writeStored(config: StoredPaymentConfig) {
     tag: tag.toString("base64"),
     data: encrypted.toString("base64"),
   });
-  const stored = await put(BLOB_PATH, body, {
+  await put(BLOB_PATH, body, {
     access: "private",
     addRandomSuffix: false,
     allowOverwrite: true,
     contentType: "application/json",
     cacheControlMaxAge: 60,
   });
-  cache = { etag: stored.etag, config };
+  rememberEnvelope(body);
+  invalidatePaymentConfigCache();
 }
 
 export function checkoutPublicConfig(accounts: PaymentAccounts) {
