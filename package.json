@@ -13,6 +13,7 @@
     "@stripe/react-stripe-js": "^7.0.0",
     "@stripe/stripe-js": "^10.1.0",
     "@vercel/blob": "^2.8.2",
+    "@wp-chatbot/nextjs": "file:vendor/wp-chatbot-nextjs-0.1.0.tgz",
     "axios": "^1.20.0",
     "class-variance-authority": "^0.7.1",
     "cn": "^0.4.0",
