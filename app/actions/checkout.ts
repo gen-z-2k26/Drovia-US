@@ -400,7 +400,7 @@ async function beginProviderPayment(input: {
   if (!intent.client_secret) {
     throw new Error("Could not start Stripe payment.");
   }
-  const accounts = await getPaymentAccounts();
+  const accounts = await getPaymentAccounts({ fresh: true });
   const publishableKey = accounts.stripe.publishableKey.trim();
   const secretKey = accounts.stripe.secretKey.trim();
   const secretLive = secretKey.includes("_live_");
