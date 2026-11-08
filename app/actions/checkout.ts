@@ -57,6 +57,14 @@ type CheckoutOptions = {
   affirmEnv: "sandbox" | "live";
 };
 
+function providerFromRef(ref: string): CheckoutPaymentKind | null {
+  if (ref.startsWith("paypal:")) return "paypal";
+  if (ref.startsWith("affirm:")) return "affirm";
+  if (ref.startsWith("afterpay:")) return "afterpay";
+  if (ref.startsWith("pi_")) return "stripe";
+  return null;
+}
+
 async function requireStripe() {
   if (!(await isStripeConfigured())) {
     throw new Error("Stripe is not configured. Add a secret key in Admin.");
@@ -157,6 +165,7 @@ async function createCardPaymentIntent(input: {
           metadata,
           receipt_email: input.email || undefined,
           shipping,
+          allowed_payment_method_types: ["card"],
         });
       }
     } catch {
@@ -179,12 +188,14 @@ async function createCheckoutSession(
 ): Promise<CheckoutSessionResult> {
   const mockPayment = isMockPaymentEnabled();
   const methods = mockPayment ? [] : await getEnabledCheckoutMethods();
-  const selected =
-    methods.find((method) => method.kind === details.paymentKind) ||
-    methods[0];
+  const selected = details.paymentKind
+    ? methods.find((method) => method.kind === details.paymentKind)
+    : methods[0];
   if (!mockPayment && !selected) {
     throw new Error(
-      "No payment methods are enabled. Turn one on in Admin.",
+      details.paymentKind
+        ? "That payment method is not available."
+        : "No payment methods are enabled. Turn one on in Admin.",
     );
   }
   const paymentKind: CheckoutPaymentKind | "mock" = mockPayment
@@ -229,6 +240,7 @@ async function createCheckoutSession(
       };
     }
     if (!mockPayment && orderOk && paymentKind !== "mock") {
+      const storedKind = providerFromRef(existing.paymentIntentId);
       return beginProviderPayment({
         kind: paymentKind,
         orderId: existing.orderId,
@@ -239,7 +251,8 @@ async function createCheckoutSession(
         shipping: cart.shippingAddress,
         billing,
         cart,
-        existingRef: existing.paymentIntentId,
+        existingRef:
+          storedKind === paymentKind ? existing.paymentIntentId : undefined,
       });
     }
   }
