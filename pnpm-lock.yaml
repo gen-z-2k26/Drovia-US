@@ -941,14 +941,6 @@ packages:
     os: [openharmony]
 
   '@unrs/resolver-binding-wasm32-wasi@1.12.2':
-  '@wp-chatbot/nextjs@file:vendor/wp-chatbot-nextjs-0.1.0.tgz':
-    resolution: {integrity: sha512-gNhcBEMtzf5k76iT/Wc+EgwCpbdA07O1IClEeVL2TM49Hil7X2pbTfK4NTeaaoVaL9C2nN+drSo8EE8T5lRw/A==, tarball: file:vendor/wp-chatbot-nextjs-0.1.0.tgz}
-    version: 0.1.0
-    hasBin: true
-    peerDependencies:
-      next: '>=14.0.0'
-      react: '>=18.0.0'
-
     resolution: {integrity: sha512-tYFDIkMxSflfEc/h92ZWNsZlHSwgimbNHSO3PL2JWQHfCuC2q316jMyYU9TIWZsFK2bQwyK5VAdYgn8ygPj69A==}
     engines: {node: '>=14.0.0'}
     cpu: [wasm32]
@@ -982,6 +974,14 @@ packages:
   '@vercel/oidc@3.8.10':
     resolution: {integrity: sha512-sPw1kIfQEA6/2dB+zlAJHnhhNBRJ8t/t4HfFvKO+g0EPBA7NbCKyGovuhgAV6Mnl865ka7HqCEguIy596czdAw==}
     engines: {node: '>= 20'}
+
+  '@wp-chatbot/nextjs@file:vendor/wp-chatbot-nextjs-0.1.0.tgz':
+    resolution: {integrity: sha512-gNhcBEMtzf5k76iT/Wc+EgwCpbdA07O1IClEeVL2TM49Hil7X2pbTfK4NTeaaoVaL9C2nN+drSo8EE8T5lRw/A==, tarball: file:vendor/wp-chatbot-nextjs-0.1.0.tgz}
+    version: 0.1.0
+    hasBin: true
+    peerDependencies:
+      next: '>=14.0.0'
+      react: '>=18.0.0'
 
   accepts@2.0.0:
     resolution: {integrity: sha512-5cvg6CtKwfgdmVqY1WIiXKc3Q1bkRqGLi+2W/6ao+6Y7gu/RCwRuAhGEzh5B4KlszSuTLgZYuqFqo5bImjNKng==}
