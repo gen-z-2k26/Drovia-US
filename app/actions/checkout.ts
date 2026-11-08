@@ -150,6 +150,16 @@ async function createCardPaymentIntent(input: {
   };
   const shipping = stripeShippingParams(input.shipping);
 
+  const payment = {
+    amount,
+    currency,
+    metadata,
+    receipt_email: input.email || undefined,
+    shipping,
+  };
+  const withWallets = ["card", "amazon_pay"] as const;
+  const cardOnly = ["card"] as const;
+
   if (input.existingIntentId?.startsWith("pi_")) {
     try {
       const existing = await stripe.paymentIntents.retrieve(input.existingIntentId);
@@ -159,28 +169,59 @@ async function createCardPaymentIntent(input: {
         existing.metadata?.woo_order_id === input.orderId
       ) {
         if (existing.status === "succeeded") return existing;
-        return await stripe.paymentIntents.update(existing.id, {
-          amount,
-          currency,
-          metadata,
-          receipt_email: input.email || undefined,
-          shipping,
-          allowed_payment_method_types: ["card"],
-        });
+        try {
+          return await stripe.paymentIntents.update(existing.id, {
+            ...payment,
+            allowed_payment_method_types: [...withWallets],
+          });
+        } catch (error) {
+          if (!amazonPayRejected(error)) throw error;
+          return await stripe.paymentIntents.update(existing.id, {
+            ...payment,
+            allowed_payment_method_types: [...cardOnly],
+          });
+        }
       }
     } catch {
       // Create a new card intent below.
     }
   }
 
-  return stripe.paymentIntents.create({
-    amount,
-    currency,
-    allowed_payment_method_types: ["card"],
-    metadata,
-    receipt_email: input.email || undefined,
-    shipping,
-  });
+  await registerWalletDomain(stripe);
+  try {
+    return await stripe.paymentIntents.create({
+      ...payment,
+      allowed_payment_method_types: [...withWallets],
+    });
+  } catch (error) {
+    if (!amazonPayRejected(error)) throw error;
+    return stripe.paymentIntents.create({
+      ...payment,
+      allowed_payment_method_types: [...cardOnly],
+    });
+  }
+}
+
+function amazonPayRejected(error: unknown) {
+  const message = error instanceof Error ? error.message.toLowerCase() : "";
+  return message.includes("amazon");
+}
+
+async function registerWalletDomain(stripe: Awaited<ReturnType<typeof getStripe>>) {
+  const origin = await requestOrigin();
+  if (!origin) return;
+  let hostname = "";
+  try {
+    hostname = new URL(origin).hostname;
+  } catch {
+    return;
+  }
+  if (!hostname || hostname === "localhost" || hostname.endsWith(".local")) return;
+  try {
+    await stripe.paymentMethodDomains.create({ domain_name: hostname });
+  } catch {
+    // The domain is already registered, or this Stripe account cannot register it.
+  }
 }
 
 async function createCheckoutSession(
