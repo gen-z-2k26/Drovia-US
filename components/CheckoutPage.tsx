@@ -792,7 +792,9 @@ export function CheckoutPage() {
                     : paymentKind
                 }
                 redirectUrl={session.redirectUrl}
-                stripePublishableKey={stripePublishableKey}
+                stripePublishableKey={
+                  session.stripePublishableKey || stripePublishableKey
+                }
                 paypalClientId={paypalClientId}
                 affirmPublicKey={affirmPublicKey}
                 affirmEnv={affirmEnv}

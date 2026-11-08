@@ -194,7 +194,12 @@ function StripePaymentForm({
       });
 
       if (error) {
-        setCardError(error.message || "Payment could not be completed.");
+        const message = error.message || "Payment could not be completed.";
+        setCardError(
+          message.includes("No such payment_intent")
+            ? "Stripe could not find this payment. In Admin, the publishable key and secret key must be from the same Stripe account, both live or both test."
+            : message,
+        );
         return;
       }
 
