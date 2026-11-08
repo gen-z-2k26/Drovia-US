@@ -1,12 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Lock } from "lucide-react";
 import {
-  CardCvcElement,
-  CardExpiryElement,
-  CardNumberElement,
   Elements,
+  ExpressCheckoutElement,
+  PaymentElement,
   useElements,
   useStripe,
 } from "@stripe/react-stripe-js";
@@ -123,20 +122,7 @@ function MockPaymentForm({
   );
 }
 
-const cardElementOptions = {
-  style: {
-    base: {
-      color: "#1C2420",
-      fontSize: "16px",
-      fontFamily: "inherit",
-      "::placeholder": { color: "#5C6B62" },
-    },
-    invalid: { color: "#b91c1c" },
-  },
-};
-
 function StripePaymentForm({
-  clientSecret,
   amount,
   currency,
   orderId,
@@ -145,14 +131,15 @@ function StripePaymentForm({
   billing,
   onPaid,
   onError,
-}: Omit<PaymentStepProps, "mockPayment" | "paymentKind" | "shipping">) {
+}: Omit<
+  PaymentStepProps,
+  "clientSecret" | "mockPayment" | "paymentKind" | "shipping"
+>) {
   const stripe = useStripe();
   const elements = useElements();
   const { settings } = useStore();
   const [submitting, setSubmitting] = useState(false);
-  const [readyCount, setReadyCount] = useState(0);
-  const [cardError, setCardError] = useState("");
-  const ready = readyCount >= 3;
+  const [ready, setReady] = useState(false);
   const billingDetails = useMemo(
     () => stripeBillingDetails(billing, email),
     [
@@ -169,37 +156,69 @@ function StripePaymentForm({
       email,
     ],
   );
+  const paymentElementOptions = useMemo(
+    () => ({
+      layout: {
+        type: "accordion" as const,
+        defaultCollapsed: false,
+        radios: "always" as const,
+        spacedAccordionItems: true,
+      },
+      paymentMethodOrder: ["card", "amazon_pay"],
+      wallets: {
+        applePay: "auto" as const,
+        googlePay: "auto" as const,
+      },
+      defaultValues: { billingDetails },
+      fields: { billingDetails: "never" as const },
+    }),
+    [billingDetails],
+  );
 
-  function markReady() {
-    setReadyCount((count) => count + 1);
-  }
+  const expressOptions = useMemo(
+    () => ({
+      buttonHeight: 48,
+      paymentMethods: {
+        applePay: "auto" as const,
+        googlePay: "auto" as const,
+        amazonPay: "auto" as const,
+        link: "never" as const,
+        paypal: "never" as const,
+      },
+    }),
+    [],
+  );
 
-  async function handleSubmit(event: FormEvent) {
-    event.preventDefault();
-    if (!stripe || !elements || submitting || !ready) return;
-    const card = elements.getElement(CardNumberElement);
-    if (!card) {
-      onError("The card form is still loading. Wait a moment and try again.");
-      return;
-    }
-    setSubmitting(true);
-    setCardError("");
-    try {
-      const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
-        payment_method: {
-          card,
+  async function confirmStripePayment() {
+    if (!stripe || !elements) return;
+    const returnUrl = new URL(
+      `/order/${encodeURIComponent(orderId)}`,
+      window.location.origin,
+    );
+    returnUrl.searchParams.set("key", orderKey);
+    returnUrl.searchParams.set("email", email);
+
+    const { error, paymentIntent } = await stripe.confirmPayment({
+      elements,
+      confirmParams: {
+        return_url: returnUrl.toString(),
+        receipt_email: email || undefined,
+        payment_method_data: {
           billing_details: billingDetails,
         },
-        receipt_email: email || undefined,
-      });
+      },
+      redirect: "if_required",
+    });
 
       if (error) {
-        const message = error.message || "Payment could not be completed.";
-        setCardError(
-          message.includes("No such payment_intent")
-            ? "Stripe could not find this payment. In Admin, the publishable key and secret key must be from the same Stripe account, both live or both test."
-            : message,
-        );
+        if (error.type !== "validation_error") {
+          const message = error.message || "Payment could not be completed.";
+          onError(
+            message.includes("No such payment_intent")
+              ? "Stripe could not find this payment. In Admin, the publishable key and secret key must be from the same Stripe account, both live or both test."
+              : message,
+          );
+        }
         return;
       }
 
@@ -221,6 +240,18 @@ function StripePaymentForm({
       }
 
       onError("Payment was not completed. Try again.");
+  }
+
+  async function handleSubmit(event: FormEvent) {
+    event.preventDefault();
+    if (!stripe || !elements || submitting || !ready) return;
+    if (!elements.getElement("payment")) {
+      onError("The card form is still loading. Wait a moment and try again.");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      await confirmStripePayment();
     } catch (submitError) {
       onError(userErrorMessage(submitError, "Payment could not be completed."));
     } finally {
@@ -230,35 +261,10 @@ function StripePaymentForm({
 
   return (
     <form className="space-y-4" onSubmit={handleSubmit}>
-      <div className="space-y-3">
-        <CardField label="Card number">
-          <CardNumberElement
-            options={{ ...cardElementOptions, placeholder: "1234 1234 1234 1234" }}
-            onReady={markReady}
-            onChange={(event) => setCardError(event.error?.message || "")}
-          />
-        </CardField>
-        <div className="grid grid-cols-2 gap-3">
-          <CardField label="Expiration date">
-            <CardExpiryElement
-              options={cardElementOptions}
-              onReady={markReady}
-              onChange={(event) => setCardError(event.error?.message || "")}
-            />
-          </CardField>
-          <CardField label="Security code">
-            <CardCvcElement
-              options={cardElementOptions}
-              onReady={markReady}
-              onChange={(event) => setCardError(event.error?.message || "")}
-            />
-          </CardField>
-        </div>
-        {cardError ? (
-          <p className="text-sm text-destructive" role="alert">
-            {cardError}
-          </p>
-        ) : null}
+      <ExpressCheckoutElement options={expressOptions} onConfirm={() => void confirmStripePayment()} />
+      <p className="text-sm text-muted-foreground">Or pay with card</p>
+      <div className="min-h-40 rounded-[8px] bg-card p-1">
+        <PaymentElement onReady={() => setReady(true)} options={paymentElementOptions} />
       </div>
       <Button
         type="submit"
@@ -684,20 +690,14 @@ export function PaymentStep(props: PaymentStepProps) {
   );
 }
 
-function CardField({
-  label,
-  children,
-}: {
-  label: string;
-  children: ReactNode;
-}) {
-  return (
-    <label className="block space-y-1.5">
-      <span className="text-sm text-foreground">{label}</span>
-      <div className="rounded-[8px] border border-border bg-white px-3.5 py-3.5">{children}</div>
-    </label>
-  );
-}
+const stripeAppearance = {
+  theme: "night" as const,
+  variables: {
+    borderRadius: "8px",
+    fontFamily: "inherit",
+    colorPrimary: "#9DCFB0",
+  },
+};
 
 function StripeCheckout({
   publishableKey,
@@ -708,6 +708,7 @@ function StripeCheckout({
   clientSecret: string;
 } & Omit<
   PaymentStepProps,
+  | "clientSecret"
   | "mockPayment"
   | "paymentKind"
   | "shipping"
@@ -717,9 +718,16 @@ function StripeCheckout({
   | "affirmPublicKey"
   | "affirmEnv"
 >) {
+  const options = useMemo(
+    () => ({
+      clientSecret,
+      appearance: stripeAppearance,
+    }),
+    [clientSecret],
+  );
   return (
-    <Elements key={publishableKey} stripe={getStripeJs(publishableKey)}>
-      <StripePaymentForm clientSecret={clientSecret} {...form} />
+    <Elements key={publishableKey} stripe={getStripeJs(publishableKey)} options={options}>
+      <StripePaymentForm {...form} />
     </Elements>
   );
 }
