@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { Lock } from "lucide-react";
 import {
+  CardCvcElement,
+  CardExpiryElement,
+  CardNumberElement,
   Elements,
-  PaymentElement,
   useElements,
   useStripe,
 } from "@stripe/react-stripe-js";
@@ -121,7 +123,20 @@ function MockPaymentForm({
   );
 }
 
+const cardElementOptions = {
+  style: {
+    base: {
+      color: "#1C2420",
+      fontSize: "16px",
+      fontFamily: "inherit",
+      "::placeholder": { color: "#5C6B62" },
+    },
+    invalid: { color: "#b91c1c" },
+  },
+};
+
 function StripePaymentForm({
+  clientSecret,
   amount,
   currency,
   orderId,
@@ -130,15 +145,14 @@ function StripePaymentForm({
   billing,
   onPaid,
   onError,
-}: Omit<
-  PaymentStepProps,
-  "clientSecret" | "mockPayment" | "paymentKind" | "shipping"
->) {
+}: Omit<PaymentStepProps, "mockPayment" | "paymentKind" | "shipping">) {
   const stripe = useStripe();
   const elements = useElements();
   const { settings } = useStore();
   const [submitting, setSubmitting] = useState(false);
-  const [ready, setReady] = useState(false);
+  const [readyCount, setReadyCount] = useState(0);
+  const [cardError, setCardError] = useState("");
+  const ready = readyCount >= 3;
   const billingDetails = useMemo(
     () => stripeBillingDetails(billing, email),
     [
@@ -155,52 +169,32 @@ function StripePaymentForm({
       email,
     ],
   );
-  const paymentElementOptions = useMemo(
-    () => ({
-      layout: "tabs" as const,
-      wallets: {
-        applePay: "never" as const,
-        googlePay: "never" as const,
-        link: "never" as const,
-      },
-      defaultValues: { billingDetails },
-      fields: { billingDetails: "never" as const },
-    }),
-    [billingDetails],
-  );
+
+  function markReady() {
+    setReadyCount((count) => count + 1);
+  }
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     if (!stripe || !elements || submitting || !ready) return;
-    if (!elements.getElement("payment")) {
+    const card = elements.getElement(CardNumberElement);
+    if (!card) {
       onError("The card form is still loading. Wait a moment and try again.");
       return;
     }
     setSubmitting(true);
+    setCardError("");
     try {
-      const returnUrl = new URL(
-        `/order/${encodeURIComponent(orderId)}`,
-        window.location.origin,
-      );
-      returnUrl.searchParams.set("key", orderKey);
-      returnUrl.searchParams.set("email", email);
-
-      const { error, paymentIntent } = await stripe.confirmPayment({
-        elements,
-        confirmParams: {
-          return_url: returnUrl.toString(),
-          receipt_email: email || undefined,
-          payment_method_data: {
-            billing_details: billingDetails,
-          },
+      const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
+        payment_method: {
+          card,
+          billing_details: billingDetails,
         },
-        redirect: "if_required",
+        receipt_email: email || undefined,
       });
 
       if (error) {
-        if (error.type !== "validation_error") {
-          onError(error.message || "Payment could not be completed.");
-        }
+        setCardError(error.message || "Payment could not be completed.");
         return;
       }
 
@@ -231,12 +225,42 @@ function StripePaymentForm({
 
   return (
     <form className="space-y-4" onSubmit={handleSubmit}>
-      <PaymentElement onReady={() => setReady(true)} options={paymentElementOptions} />
+      <div className="space-y-3">
+        <CardField label="Card number">
+          <CardNumberElement
+            options={{ ...cardElementOptions, placeholder: "1234 1234 1234 1234" }}
+            onReady={markReady}
+            onChange={(event) => setCardError(event.error?.message || "")}
+          />
+        </CardField>
+        <div className="grid grid-cols-2 gap-3">
+          <CardField label="Expiration date">
+            <CardExpiryElement
+              options={cardElementOptions}
+              onReady={markReady}
+              onChange={(event) => setCardError(event.error?.message || "")}
+            />
+          </CardField>
+          <CardField label="Security code">
+            <CardCvcElement
+              options={cardElementOptions}
+              onReady={markReady}
+              onChange={(event) => setCardError(event.error?.message || "")}
+            />
+          </CardField>
+        </div>
+        {cardError ? (
+          <p className="text-sm text-destructive" role="alert">
+            {cardError}
+          </p>
+        ) : null}
+      </div>
       <Button
         type="submit"
         size="lg"
         className="w-full"
         disabled={!stripe || !elements || !ready || submitting}
+        aria-busy={submitting}
       >
         {submitting
           ? "Paying..."
@@ -655,13 +679,20 @@ export function PaymentStep(props: PaymentStepProps) {
   );
 }
 
-const stripeAppearance = {
-  theme: "stripe" as const,
-  variables: {
-    borderRadius: "12px",
-    fontFamily: "inherit",
-  },
-};
+function CardField({
+  label,
+  children,
+}: {
+  label: string;
+  children: ReactNode;
+}) {
+  return (
+    <label className="block space-y-1.5">
+      <span className="text-sm text-foreground">{label}</span>
+      <div className="rounded-[8px] border border-border bg-white px-3.5 py-3.5">{children}</div>
+    </label>
+  );
+}
 
 function StripeCheckout({
   publishableKey,
@@ -672,7 +703,6 @@ function StripeCheckout({
   clientSecret: string;
 } & Omit<
   PaymentStepProps,
-  | "clientSecret"
   | "mockPayment"
   | "paymentKind"
   | "shipping"
@@ -682,16 +712,9 @@ function StripeCheckout({
   | "affirmPublicKey"
   | "affirmEnv"
 >) {
-  const options = useMemo(
-    () => ({
-      clientSecret,
-      appearance: stripeAppearance,
-    }),
-    [clientSecret],
-  );
   return (
-    <Elements stripe={getStripeJs(publishableKey)} options={options}>
-      <StripePaymentForm {...form} />
+    <Elements stripe={getStripeJs(publishableKey)}>
+      <StripePaymentForm clientSecret={clientSecret} {...form} />
     </Elements>
   );
 }
