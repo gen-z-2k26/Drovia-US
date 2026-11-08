@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Lock } from "lucide-react";
 import {
   Elements,
@@ -138,12 +138,20 @@ function StripePaymentForm({
   const elements = useElements();
   const { settings } = useStore();
   const [submitting, setSubmitting] = useState(false);
+  const [ready, setReady] = useState(false);
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
-    if (!stripe || !elements) return;
+    if (!stripe || !elements || submitting) return;
+    if (!elements.getElement("payment")) {
+      onError("The card form is still loading. Wait a moment and try again.");
+      return;
+    }
     setSubmitting(true);
     try {
+      const { error: submitError } = await elements.submit();
+      if (submitError) return;
+
       const returnUrl = new URL(
         `/order/${encodeURIComponent(orderId)}`,
         window.location.origin,
@@ -165,7 +173,9 @@ function StripePaymentForm({
       });
 
       if (error) {
-        onError(error.message || "Payment could not be completed.");
+        if (error.type !== "validation_error") {
+          onError(error.message || "Payment could not be completed.");
+        }
         return;
       }
 
@@ -197,6 +207,7 @@ function StripePaymentForm({
   return (
     <form className="space-y-4" onSubmit={handleSubmit}>
       <PaymentElement
+        onReady={() => setReady(true)}
         options={{
           layout: "tabs",
           wallets: { applePay: "never", googlePay: "never" },
@@ -212,7 +223,7 @@ function StripePaymentForm({
         type="submit"
         size="lg"
         className="w-full"
-        disabled={!stripe || !elements || submitting}
+        disabled={!stripe || !elements || !ready || submitting}
       >
         {submitting
           ? "Paying..."
@@ -616,29 +627,58 @@ export function PaymentStep(props: PaymentStepProps) {
   }
 
   return (
-    <Elements
-      stripe={getStripeJs(props.stripePublishableKey)}
-      options={{
-        clientSecret: props.clientSecret,
-        appearance: {
-          theme: "stripe",
-          variables: {
-            borderRadius: "12px",
-            fontFamily: "inherit",
-          },
-        },
-      }}
-    >
-      <StripePaymentForm
-        amount={props.amount}
-        currency={props.currency}
-        orderId={props.orderId}
-        orderKey={props.orderKey}
-        email={props.email}
-        billing={props.billing}
-        onPaid={props.onPaid}
-        onError={props.onError}
-      />
+    <StripeCheckout
+      publishableKey={props.stripePublishableKey}
+      clientSecret={props.clientSecret}
+      amount={props.amount}
+      currency={props.currency}
+      orderId={props.orderId}
+      orderKey={props.orderKey}
+      email={props.email}
+      billing={props.billing}
+      onPaid={props.onPaid}
+      onError={props.onError}
+    />
+  );
+}
+
+const stripeAppearance = {
+  theme: "stripe" as const,
+  variables: {
+    borderRadius: "12px",
+    fontFamily: "inherit",
+  },
+};
+
+function StripeCheckout({
+  publishableKey,
+  clientSecret,
+  ...form
+}: {
+  publishableKey: string;
+  clientSecret: string;
+} & Omit<
+  PaymentStepProps,
+  | "clientSecret"
+  | "mockPayment"
+  | "paymentKind"
+  | "shipping"
+  | "redirectUrl"
+  | "stripePublishableKey"
+  | "paypalClientId"
+  | "affirmPublicKey"
+  | "affirmEnv"
+>) {
+  const options = useMemo(
+    () => ({
+      clientSecret,
+      appearance: stripeAppearance,
+    }),
+    [clientSecret],
+  );
+  return (
+    <Elements stripe={getStripeJs(publishableKey)} options={options}>
+      <StripePaymentForm {...form} />
     </Elements>
   );
 }
