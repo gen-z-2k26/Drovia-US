@@ -400,13 +400,27 @@ async function beginProviderPayment(input: {
   if (!intent.client_secret) {
     throw new Error("Could not start Stripe payment.");
   }
+  const accounts = await getPaymentAccounts();
+  const publishableKey = accounts.stripe.publishableKey.trim();
+  const secretKey = accounts.stripe.secretKey.trim();
+  const secretLive = secretKey.includes("_live_");
+  const publishableLive = publishableKey.includes("_live_");
+  if (!publishableKey.startsWith("pk_") || secretLive !== publishableLive) {
+    throw new Error(
+      "The Stripe publishable key and secret key are not a matching pair. In Admin, use both keys from the same Stripe account.",
+    );
+  }
   await setPendingCheckout({
     orderId: input.orderId,
     orderKey: input.orderKey,
     paymentIntentId: intent.id,
     cartHash: input.cart.cartHash,
   });
-  return { ...base, clientSecret: intent.client_secret };
+  return {
+    ...base,
+    clientSecret: intent.client_secret,
+    stripePublishableKey: publishableKey,
+  };
 }
 
 async function finishPaid(
