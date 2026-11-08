@@ -139,19 +139,45 @@ function StripePaymentForm({
   const { settings } = useStore();
   const [submitting, setSubmitting] = useState(false);
   const [ready, setReady] = useState(false);
+  const billingDetails = useMemo(
+    () => stripeBillingDetails(billing, email),
+    [
+      billing.firstName,
+      billing.lastName,
+      billing.email,
+      billing.phone,
+      billing.address1,
+      billing.address2,
+      billing.city,
+      billing.state,
+      billing.postcode,
+      billing.country,
+      email,
+    ],
+  );
+  const paymentElementOptions = useMemo(
+    () => ({
+      layout: "tabs" as const,
+      wallets: {
+        applePay: "never" as const,
+        googlePay: "never" as const,
+        link: "never" as const,
+      },
+      defaultValues: { billingDetails },
+      fields: { billingDetails: "never" as const },
+    }),
+    [billingDetails],
+  );
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
-    if (!stripe || !elements || submitting) return;
+    if (!stripe || !elements || submitting || !ready) return;
     if (!elements.getElement("payment")) {
       onError("The card form is still loading. Wait a moment and try again.");
       return;
     }
     setSubmitting(true);
     try {
-      const { error: submitError } = await elements.submit();
-      if (submitError) return;
-
       const returnUrl = new URL(
         `/order/${encodeURIComponent(orderId)}`,
         window.location.origin,
@@ -159,7 +185,6 @@ function StripePaymentForm({
       returnUrl.searchParams.set("key", orderKey);
       returnUrl.searchParams.set("email", email);
 
-      const billingDetails = stripeBillingDetails(billing, email);
       const { error, paymentIntent } = await stripe.confirmPayment({
         elements,
         confirmParams: {
@@ -206,19 +231,7 @@ function StripePaymentForm({
 
   return (
     <form className="space-y-4" onSubmit={handleSubmit}>
-      <PaymentElement
-        onReady={() => setReady(true)}
-        options={{
-          layout: "tabs",
-          wallets: { applePay: "never", googlePay: "never" },
-          defaultValues: {
-            billingDetails: stripeBillingDetails(billing, email),
-          },
-          fields: {
-            billingDetails: "never",
-          },
-        }}
-      />
+      <PaymentElement onReady={() => setReady(true)} options={paymentElementOptions} />
       <Button
         type="submit"
         size="lg"
@@ -622,7 +635,7 @@ export function PaymentStep(props: PaymentStepProps) {
     return <Unavailable>This payment method is not available.</Unavailable>;
   }
 
-  if (!props.stripePublishableKey || !props.clientSecret) {
+  if (!props.stripePublishableKey || !props.clientSecret.includes("_secret_")) {
     return <Unavailable>Card payment is not available right now.</Unavailable>;
   }
 
