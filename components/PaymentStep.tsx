@@ -320,6 +320,7 @@ function PayPalPayment({
     document.body.appendChild(script);
     return () => {
       cancelled = true;
+      slot.current?.replaceChildren();
     };
   }, [clientId, clientSecret, currency, orderId, orderKey]);
 

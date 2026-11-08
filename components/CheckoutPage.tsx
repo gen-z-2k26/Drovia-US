@@ -112,6 +112,8 @@ export function CheckoutPage() {
   const syncKey = useRef("");
   const ratesInflight = useRef<Promise<void> | null>(null);
   const submitGeneration = useRef(0);
+  const paymentKindRef = useRef(paymentKind);
+  paymentKindRef.current = paymentKind;
   const shippingRef = useRef(shipping);
   const billingRef = useRef(billing);
   const sameRef = useRef(same);
@@ -245,6 +247,8 @@ export function CheckoutPage() {
 
   async function proceedToPayment() {
     if (submitting || !cart.items.length || !validate()) return;
+    const requestedKind = paymentKind;
+    if (!mockPayment && !requestedKind) return;
     setSubmitting(true);
     setSessionError("");
     setSession(null);
@@ -281,14 +285,28 @@ export function CheckoutPage() {
           shipping,
           billing: same ? { ...shipping, email: shipping.email } : billing,
           billingSameAsShipping: same,
-          paymentKind: paymentKind || undefined,
+          paymentKind: requestedKind || undefined,
           customerNote: buildCustomerNote(isGift, sellerNote),
         }),
       );
       if (generation !== submitGeneration.current) return;
+      if (paymentKindRef.current !== requestedKind) return;
+      if (
+        nextSession.paymentKind !== "mock" &&
+        requestedKind &&
+        nextSession.paymentKind !== requestedKind
+      ) {
+        setErrors({
+          form: "Could not start the selected payment method. Try again.",
+        });
+        return;
+      }
       setCart(nextSession.cart);
       setSession(nextSession);
-      if (nextSession.redirectUrl) {
+      if (
+        nextSession.redirectUrl &&
+        nextSession.paymentKind === requestedKind
+      ) {
         leaving = true;
         window.location.assign(nextSession.redirectUrl);
       }
@@ -681,8 +699,10 @@ export function CheckoutPage() {
                   methods={paymentMethods}
                   value={paymentKind}
                   onChange={(kind) => {
+                    submitGeneration.current += 1;
                     setPaymentKind(kind);
                     setSession(null);
+                    setSubmitting(false);
                   }}
                 />
                 {sessionError && !session ? (
@@ -713,7 +733,7 @@ export function CheckoutPage() {
                     Proceed to payment
                   </Button>
                   {submitting ? <PaymentFormSkeleton /> : null}
-                  {session ? (
+                  {session?.paymentKind === "afterpay" ? (
                     <AfterpayPayment
                       amount={session.amount}
                       currency={session.currency}
@@ -743,8 +763,12 @@ export function CheckoutPage() {
                 </Button>
               ) : null}
             </form>
-            {session && paymentKind !== "afterpay" ? (
+            {session &&
+            paymentKind !== "afterpay" &&
+            (session.paymentKind === paymentKind ||
+              session.paymentKind === "mock") ? (
               <PaymentStep
+                key={paymentKind || session.paymentKind}
                 amount={session.amount}
                 currency={session.currency}
                 clientSecret={session.clientSecret}
@@ -762,7 +786,11 @@ export function CheckoutPage() {
                     : billing
                 }
                 mockPayment={session.mockPayment}
-                paymentKind={session.paymentKind}
+                paymentKind={
+                  session.paymentKind === "mock" || paymentKind === ""
+                    ? session.paymentKind
+                    : paymentKind
+                }
                 redirectUrl={session.redirectUrl}
                 stripePublishableKey={stripePublishableKey}
                 paypalClientId={paypalClientId}
