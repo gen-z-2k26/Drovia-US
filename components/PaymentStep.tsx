@@ -718,7 +718,7 @@ function StripeCheckout({
   | "affirmEnv"
 >) {
   return (
-    <Elements stripe={getStripeJs(publishableKey)}>
+    <Elements key={publishableKey} stripe={getStripeJs(publishableKey)}>
       <StripePaymentForm clientSecret={clientSecret} {...form} />
     </Elements>
   );

@@ -52,7 +52,7 @@ export async function getStripeWebhookSecret() {
 }
 
 export async function getStripe(): Promise<Stripe> {
-  const accounts = await getPaymentAccounts();
+  const accounts = await getPaymentAccounts({ fresh: true });
   const key = accounts.stripe.secretKey;
   if (!key) {
     throw new Error("Stripe is not configured. Add a secret key in Admin.");
