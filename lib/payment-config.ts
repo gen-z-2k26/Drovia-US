@@ -359,8 +359,12 @@ export function validatePaymentInput(input: PaymentSettingsInput, resolved: Stor
   if (stripePublishable && !stripePublishable.startsWith("pk_")) {
     throw new Error("Stripe publishable key must start with pk_.");
   }
-  if (stripeSecret && !stripeSecret.startsWith("sk_")) {
-    throw new Error("Stripe secret key must start with sk_.");
+  if (
+    stripeSecret &&
+    !stripeSecret.startsWith("sk_") &&
+    !stripeSecret.startsWith("rk_")
+  ) {
+    throw new Error("Stripe secret key must start with sk_ or rk_.");
   }
   if (stripeWebhook && !stripeWebhook.startsWith("whsec_")) {
     throw new Error("Stripe webhook secret must start with whsec_.");

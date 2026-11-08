@@ -110,6 +110,8 @@ export function CheckoutPage() {
   const [showNote, setShowNote] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
   const syncKey = useRef("");
+  const ratesInflight = useRef<Promise<void> | null>(null);
+  const submitGeneration = useRef(0);
   const shippingRef = useRef(shipping);
   const billingRef = useRef(billing);
   const sameRef = useRef(same);
@@ -156,11 +158,12 @@ export function CheckoutPage() {
   }, [setCart]);
 
   useEffect(() => {
+    if (submitting) return;
     if (session && session.cart.cartHash !== cart.cartHash) {
       setSession(null);
       setSessionError("");
     }
-  }, [cart.cartHash, session]);
+  }, [cart.cartHash, session, submitting]);
 
   async function refreshRates(nextShipping = shippingRef.current) {
     if (!addressReady(nextShipping)) return;
@@ -183,17 +186,26 @@ export function CheckoutPage() {
           phone: nextShipping.phone || currentBilling.phone,
         }
       : currentBilling;
-    try {
-      setCart(
-        unwrapCart(
+    const generation = submitGeneration.current;
+    const task = (async () => {
+      try {
+        const next = unwrapCart(
           await updateCustomerAction({
             shipping: nextShipping,
             billing: nextBilling,
           }),
-        ),
-      );
-    } catch {
-      syncKey.current = "";
+        );
+        if (generation !== submitGeneration.current) return;
+        setCart(next);
+      } catch {
+        if (generation === submitGeneration.current) syncKey.current = "";
+      }
+    })();
+    ratesInflight.current = task;
+    try {
+      await task;
+    } finally {
+      if (ratesInflight.current === task) ratesInflight.current = null;
     }
   }
 
@@ -232,19 +244,37 @@ export function CheckoutPage() {
   }
 
   async function proceedToPayment() {
-    if (!cart.items.length || !validate()) return;
+    if (submitting || !cart.items.length || !validate()) return;
     setSubmitting(true);
     setSessionError("");
     setSession(null);
+    const generation = ++submitGeneration.current;
+    let leaving = false;
     try {
-      const nextCart = await syncAddress();
+      const pendingRates = ratesInflight.current;
+      if (pendingRates) await pendingRates;
+      if (generation !== submitGeneration.current) return;
+      let nextCart = await syncAddress();
+      if (generation !== submitGeneration.current) return;
       if (
         nextCart.needsShipping &&
         !nextCart.shippingRates.some((rate) => rate.selected)
       ) {
-        setErrors({ form: "Select a shipping method." });
-        setSubmitting(false);
-        return;
+        const first = nextCart.shippingRates[0];
+        if (!first) {
+          setErrors({
+            form: "No shipping methods are available for this address yet.",
+          });
+          return;
+        }
+        nextCart = unwrapCart(
+          await selectShippingRateAction({
+            packageId: first.packageId,
+            rateId: first.rateId,
+          }),
+        );
+        if (generation !== submitGeneration.current) return;
+        setCart(nextCart);
       }
       const nextSession = unwrapResult(
         await createCheckoutSessionAction({
@@ -255,8 +285,13 @@ export function CheckoutPage() {
           customerNote: buildCustomerNote(isGift, sellerNote),
         }),
       );
+      if (generation !== submitGeneration.current) return;
       setCart(nextSession.cart);
       setSession(nextSession);
+      if (nextSession.redirectUrl) {
+        leaving = true;
+        window.location.assign(nextSession.redirectUrl);
+      }
     } catch (error) {
       const message = userErrorMessage(
         error,
@@ -265,7 +300,9 @@ export function CheckoutPage() {
       setSessionError(message);
       setErrors({ form: message });
     } finally {
-      setSubmitting(false);
+      if (!leaving && generation === submitGeneration.current) {
+        setSubmitting(false);
+      }
     }
   }
 
@@ -378,8 +415,9 @@ export function CheckoutPage() {
           </div>
 
           <section className="min-w-0 pb-8 pt-6 sm:pb-16 sm:pt-8">
+            <div className="mx-auto w-full max-w-[560px] space-y-7 sm:space-y-9 lg:mx-0">
             <form
-              className="mx-auto w-full max-w-[560px] space-y-7 sm:space-y-9 lg:mx-0"
+              className="space-y-7 sm:space-y-9"
               onSubmit={(event) => {
                 event.preventDefault();
                 void proceedToPayment();
@@ -650,54 +688,6 @@ export function CheckoutPage() {
                 {sessionError && !session ? (
                   <p className="text-sm text-destructive">{sessionError}</p>
                 ) : null}
-                {session && paymentKind !== "afterpay" ? (
-                  <PaymentStep
-                    amount={session.amount}
-                    currency={session.currency}
-                    clientSecret={session.clientSecret}
-                    orderId={session.orderId}
-                    orderKey={session.orderKey}
-                    email={session.email}
-                    shipping={shipping}
-                    billing={
-                      same
-                        ? {
-                            ...shipping,
-                            email: shipping.email || billing.email,
-                            phone: shipping.phone || billing.phone,
-                          }
-                        : billing
-                    }
-                    mockPayment={session.mockPayment}
-                    paymentKind={session.paymentKind}
-                    redirectUrl={session.redirectUrl}
-                    stripePublishableKey={stripePublishableKey}
-                    paypalClientId={paypalClientId}
-                    affirmPublicKey={affirmPublicKey}
-                    affirmEnv={affirmEnv}
-                    onPaid={(result) => {
-                      setCart(emptyStoreCart());
-                      toast({
-                        title: "Order completed",
-                        description:
-                          "Kindly check your email for the order details and tracking link.",
-                      });
-                      router.push(
-                        `/order/${result.orderId}?key=${encodeURIComponent(result.orderKey)}&email=${encodeURIComponent(result.email)}`,
-                      );
-                    }}
-                    onError={(message) => {
-                      setErrors({
-                        form: userErrorMessage(
-                          new Error(message),
-                          "Payment could not be completed. Try again.",
-                        ),
-                      });
-                    }}
-                  />
-                ) : submitting && paymentKind !== "afterpay" ? (
-                  <PaymentFormSkeleton />
-                ) : null}
               </section>
 
               {errors.form ? (
@@ -709,26 +699,18 @@ export function CheckoutPage() {
               {paymentKind === "afterpay" ? (
                 <>
                   <Button
-                    type={session?.redirectUrl ? "button" : "submit"}
+                    type="submit"
                     size="lg"
                     className="h-[52px] w-full rounded-[8px] text-sm font-medium tracking-[0.08em] uppercase"
                     disabled={submitting || !cart.items.length}
-                    onClick={
-                      session?.redirectUrl
-                        ? () => {
-                            window.location.assign(session.redirectUrl!);
-                          }
-                        : undefined
-                    }
+                    aria-busy={submitting}
                   >
                     {submitting ? (
                       <Loader2 className="size-4 animate-spin" aria-hidden />
                     ) : (
                       <Lock className="size-4" aria-hidden />
                     )}
-                    {session?.redirectUrl
-                      ? "Continue to Afterpay"
-                      : "Proceed to payment"}
+                    Proceed to payment
                   </Button>
                   {submitting ? <PaymentFormSkeleton /> : null}
                   {session ? (
@@ -750,16 +732,66 @@ export function CheckoutPage() {
                     submitting ||
                     (!mockPayment && !paymentKind)
                   }
+                  aria-busy={submitting}
                 >
                   {submitting ? (
                     <Loader2 className="size-4 animate-spin" aria-hidden />
                   ) : (
                     <Lock className="size-4" aria-hidden />
                   )}
-                  {submitting ? "Preparing payment..." : "Proceed to payment"}
+                  Proceed to payment
                 </Button>
               ) : null}
             </form>
+            {session && paymentKind !== "afterpay" ? (
+              <PaymentStep
+                amount={session.amount}
+                currency={session.currency}
+                clientSecret={session.clientSecret}
+                orderId={session.orderId}
+                orderKey={session.orderKey}
+                email={session.email}
+                shipping={shipping}
+                billing={
+                  same
+                    ? {
+                        ...shipping,
+                        email: shipping.email || billing.email,
+                        phone: shipping.phone || billing.phone,
+                      }
+                    : billing
+                }
+                mockPayment={session.mockPayment}
+                paymentKind={session.paymentKind}
+                redirectUrl={session.redirectUrl}
+                stripePublishableKey={stripePublishableKey}
+                paypalClientId={paypalClientId}
+                affirmPublicKey={affirmPublicKey}
+                affirmEnv={affirmEnv}
+                onPaid={(result) => {
+                  setCart(emptyStoreCart());
+                  toast({
+                    title: "Order completed",
+                    description:
+                      "Kindly check your email for the order details and tracking link.",
+                  });
+                  router.push(
+                    `/order/${result.orderId}?key=${encodeURIComponent(result.orderKey)}&email=${encodeURIComponent(result.email)}`,
+                  );
+                }}
+                onError={(message) => {
+                  setErrors({
+                    form: userErrorMessage(
+                      new Error(message),
+                      "Payment could not be completed. Try again.",
+                    ),
+                  });
+                }}
+              />
+            ) : submitting && paymentKind !== "afterpay" ? (
+              <PaymentFormSkeleton />
+            ) : null}
+            </div>
           </section>
         </>
       )}
