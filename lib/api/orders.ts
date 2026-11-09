@@ -36,29 +36,6 @@ export type WooOrder = {
   meta_data?: Array<{ key?: string; value?: unknown }>;
 };
 
-function storefrontOrigin() {
-  return process.env.NEXT_PUBLIC_SITE_URL?.trim().replace(/\/$/, "") || "";
-}
-
-function orderTrackingUrl(order: CreateOrderResult) {
-  const origin = storefrontOrigin();
-  if (!origin || !order.orderId) return "";
-  const params = new URLSearchParams();
-  params.set("order", order.orderId);
-  if (order.orderKey) params.set("key", order.orderKey);
-  if (order.email) params.set("email", order.email);
-  return `${origin}/track-your-order?${params.toString()}`;
-}
-
-function trackingCustomerNote(order: CreateOrderResult) {
-  const trackUrl = orderTrackingUrl(order);
-  const lines = [
-    `Track this order: ${trackUrl || "open Track Your Order on our site"}`,
-    `Order number ${order.orderId}. Order key ${order.orderKey}.`,
-  ];
-  return lines.join(" ");
-}
-
 function lineItemImage(item: WooOrderLineItem) {
   if (typeof item.image === "string") return item.image;
   return item.image?.src || "";
@@ -224,7 +201,6 @@ export async function markOrderPaid(
 
     const mockPayment = transactionId.startsWith("dev_mock_");
     const paymentMethod = options?.paymentMethod || "stripe";
-    const mappedPreview = mapWooOrder(existing);
     const order = await wooPut<WooOrder>(`orders/${orderId}`, {
       payment_method: paymentMethod,
       payment_method_title:
@@ -238,8 +214,6 @@ export async function markOrderPaid(
               : "Credit card (Stripe)"),
       set_paid: true,
       transaction_id: transactionId,
-      customer_note:
-        existing.customer_note?.trim() || trackingCustomerNote(mappedPreview),
     });
 
     return mapWooOrder(order);
