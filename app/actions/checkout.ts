@@ -31,6 +31,7 @@ import {
   stripeAmountMatches,
   toStripeAmount,
 } from "@/lib/stripe";
+import { STRIPE_SEPARATE_CHECKOUT_METHODS } from "@/lib/stripe-amount";
 import { stripeShippingParams } from "@/lib/stripe-address";
 import { publicError, type PublicResult } from "@/lib/cart-result";
 import type {
@@ -149,34 +150,49 @@ async function createCardPaymentIntent(input: {
     order_key: input.orderKey,
   };
   const shipping = stripeShippingParams(input.shipping);
+  const automatic_payment_methods = {
+    enabled: true,
+    allow_redirects: "always" as const,
+  };
+  const excluded_payment_method_types = [...STRIPE_SEPARATE_CHECKOUT_METHODS];
 
   if (input.existingIntentId?.startsWith("pi_")) {
     try {
       const existing = await stripe.paymentIntents.retrieve(input.existingIntentId);
+      const sameOrder = existing.metadata?.woo_order_id === input.orderId;
+      if (existing.status === "succeeded" && sameOrder) return existing;
       if (
-        existing.status !== "canceled" &&
+        sameOrder &&
         existing.client_secret &&
-        existing.metadata?.woo_order_id === input.orderId
+        existing.automatic_payment_methods?.enabled &&
+        existing.status !== "canceled"
       ) {
-        if (existing.status === "succeeded") return existing;
         return await stripe.paymentIntents.update(existing.id, {
           amount,
           currency,
           metadata,
           receipt_email: input.email || undefined,
           shipping,
-          allowed_payment_method_types: ["card"],
+          excluded_payment_method_types,
         });
       }
+      if (existing.status !== "canceled" && existing.status !== "succeeded") {
+        try {
+          await stripe.paymentIntents.cancel(existing.id);
+        } catch {
+          // Already cancelled or no longer cancellable.
+        }
+      }
     } catch {
-      // Create a new card intent below.
+      // Create a new intent below.
     }
   }
 
   return stripe.paymentIntents.create({
     amount,
     currency,
-    allowed_payment_method_types: ["card"],
+    automatic_payment_methods,
+    excluded_payment_method_types,
     metadata,
     receipt_email: input.email || undefined,
     shipping,
