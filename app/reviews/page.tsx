@@ -3,10 +3,9 @@ import { pageContainer } from "@/lib/layout";
 import { getSiteSettings } from "@/lib/api";
 import { PageHero } from "@/components/PageHero";
 import { ReviewsBoard } from "@/components/ReviewsBoard";
-import { CONTENT_REVALIDATE_SECONDS } from "@/lib/cache-policy";
 import { storeReviewSummary, storeReviews } from "@/lib/store-reviews";
 
-export const revalidate = CONTENT_REVALIDATE_SECONDS;
+export const revalidate = 3600;
 
 export const metadata: Metadata = {
   title: "Customer reviews",

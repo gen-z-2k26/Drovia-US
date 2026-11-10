@@ -3,10 +3,9 @@ import type { Metadata } from "next";
 import { Mail, Package, Truck } from "lucide-react";
 import { TrackOrderForm } from "@/components/TrackOrderForm";
 import { getSiteSettings } from "@/lib/api";
-import { CONTENT_REVALIDATE_SECONDS } from "@/lib/cache-policy";
 import { pageContainer } from "@/lib/layout";
 
-export const revalidate = CONTENT_REVALIDATE_SECONDS;
+export const revalidate = 3600;
 
 export const metadata: Metadata = {
   title: "Track Your Order",

@@ -1,10 +1,9 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { VerbatimDocument } from "@/components/VerbatimDocument";
-import { CONTENT_REVALIDATE_SECONDS } from "@/lib/cache-policy";
 import { discoverBySlug } from "@/lib/discover";
 
-export const revalidate = CONTENT_REVALIDATE_SECONDS;
+export const revalidate = 3600;
 
 const PAGE = discoverBySlug("about-us");
 

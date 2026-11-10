@@ -5,10 +5,9 @@ import {
   getSiteUrl,
   getTopCategories,
 } from "@/lib/api";
-import { CONTENT_REVALIDATE_SECONDS } from "@/lib/cache-policy";
 import { POLICY_PAGES } from "@/lib/policy-pages";
 
-export const revalidate = CONTENT_REVALIDATE_SECONDS;
+export const revalidate = 3600;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const settings = await getSiteSettings();

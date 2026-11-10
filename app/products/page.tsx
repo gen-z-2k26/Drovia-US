@@ -6,7 +6,6 @@ import {
 } from "@/components/ProductsCatalog";
 import { getProducts, getSiteSettings, getSiteUrl } from "@/lib/api";
 import { toCardProduct } from "@/lib/catalog-card";
-import { STOCK_REVALIDATE_SECONDS } from "@/lib/cache-policy";
 import { pageContainer } from "@/lib/layout";
 import type { Product } from "@/lib/types";
 
@@ -29,7 +28,7 @@ function visibleCatalog(products: Product[]) {
   });
 }
 
-export const revalidate = STOCK_REVALIDATE_SECONDS;
+export const revalidate = 60;
 
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getSiteSettings();

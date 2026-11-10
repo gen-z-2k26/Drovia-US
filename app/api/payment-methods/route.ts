@@ -3,7 +3,7 @@ import { getEnabledCheckoutMethods } from "@/lib/api/payments";
 import { PAYMENT_METHODS_REVALIDATE_SECONDS } from "@/lib/cache-policy";
 import { publicPaymentMethods } from "@/lib/payment-methods-public";
 
-export const revalidate = PAYMENT_METHODS_REVALIDATE_SECONDS;
+export const revalidate = 300;
 
 // A public, read-only list of the checkout's payment options and whether each is on, from the
 // same function the checkout page uses. It holds no keys or account details. The shopping

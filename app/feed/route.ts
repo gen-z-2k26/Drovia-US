@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { FEED_REVALIDATE_SECONDS } from "@/lib/cache-policy";
 import { feedStoreOrigin, rewriteProductLinks } from "@/lib/ctx-feed";
 
-export const revalidate = FEED_REVALIDATE_SECONDS;
+export const revalidate = 900;
 
 function originOf(value: string) {
   try {
