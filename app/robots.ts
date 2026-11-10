@@ -1,5 +1,8 @@
 import type { MetadataRoute } from "next";
 import { getSiteSettings, getSiteUrl } from "@/lib/api";
+import { CONTENT_REVALIDATE_SECONDS } from "@/lib/cache-policy";
+
+export const revalidate = CONTENT_REVALIDATE_SECONDS;
 
 export default async function robots(): Promise<MetadataRoute.Robots> {
   const settings = await getSiteSettings();

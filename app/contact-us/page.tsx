@@ -3,9 +3,10 @@ import { notFound } from "next/navigation";
 import { ContactForm } from "@/components/ContactForm";
 import { VerbatimDocument } from "@/components/VerbatimDocument";
 import { pageContainer } from "@/lib/layout";
+import { CONTENT_REVALIDATE_SECONDS } from "@/lib/cache-policy";
 import { discoverBySlug } from "@/lib/discover";
 
-export const revalidate = 60;
+export const revalidate = CONTENT_REVALIDATE_SECONDS;
 
 const PAGE = discoverBySlug("contact-us");
 
