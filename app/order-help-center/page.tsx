@@ -2,9 +2,10 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { CustomerCarePage } from "@/components/CustomerCarePage";
 import { getSiteSettings } from "@/lib/api";
+import { CONTENT_REVALIDATE_SECONDS } from "@/lib/cache-policy";
 import { customerCareBySlug } from "@/lib/customer-care";
 
-export const revalidate = 60;
+export const revalidate = CONTENT_REVALIDATE_SECONDS;
 
 const PAGE = customerCareBySlug("order-help-center");
 

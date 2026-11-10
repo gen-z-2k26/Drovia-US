@@ -9,9 +9,22 @@ import {
   getSiteUrl,
 } from "@/lib/api";
 import { toCardProduct } from "@/lib/catalog-card";
+import { STOCK_REVALIDATE_SECONDS } from "@/lib/cache-policy";
+import { isCatalogSlug } from "@/lib/catalog-slug";
 import { pageContainer } from "@/lib/layout";
 
-export const revalidate = 60;
+export const revalidate = STOCK_REVALIDATE_SECONDS;
+
+export async function generateStaticParams() {
+  try {
+    const categories = await getCategoryRecords();
+    return categories
+      .map((category) => ({ slug: category.slug }))
+      .filter((entry) => isCatalogSlug(entry.slug));
+  } catch {
+    return [];
+  }
+}
 
 type CollectionPageProps = {
   params: Promise<{ slug: string }>;
@@ -21,6 +34,7 @@ export async function generateMetadata({
   params,
 }: CollectionPageProps): Promise<Metadata> {
   const { slug } = await params;
+  if (!isCatalogSlug(slug)) notFound();
   const [settings, categories] = await Promise.all([
     getSiteSettings(),
     getCategoryRecords(),
@@ -62,6 +76,7 @@ export async function generateMetadata({
 
 export default async function CollectionPage({ params }: CollectionPageProps) {
   const { slug } = await params;
+  if (!isCatalogSlug(slug)) notFound();
   const [settings, categories] = await Promise.all([
     getSiteSettings(),
     getCategoryRecords(),
