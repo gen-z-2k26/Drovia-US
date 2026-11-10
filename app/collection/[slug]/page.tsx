@@ -9,11 +9,10 @@ import {
   getSiteUrl,
 } from "@/lib/api";
 import { toCardProduct } from "@/lib/catalog-card";
-import { STOCK_REVALIDATE_SECONDS } from "@/lib/cache-policy";
 import { isCatalogSlug } from "@/lib/catalog-slug";
 import { pageContainer } from "@/lib/layout";
 
-export const revalidate = STOCK_REVALIDATE_SECONDS;
+export const revalidate = 60;
 
 export async function generateStaticParams() {
   try {

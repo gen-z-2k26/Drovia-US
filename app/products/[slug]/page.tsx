@@ -13,11 +13,10 @@ import {
 } from "@/lib/api";
 import { getBnplPublicConfig } from "@/lib/bnpl-server";
 import { toCardProduct } from "@/lib/catalog-card";
-import { STOCK_REVALIDATE_SECONDS } from "@/lib/cache-policy";
 import { isCatalogSlug } from "@/lib/catalog-slug";
 import type { ProductPaymentDisplay, BnplPublicConfig } from "@/lib/types";
 
-export const revalidate = STOCK_REVALIDATE_SECONDS;
+export const revalidate = 60;
 
 export async function generateStaticParams() {
   try {

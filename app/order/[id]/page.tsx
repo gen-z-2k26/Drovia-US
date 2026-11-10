@@ -1,14 +1,13 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import { OrderFromQuery } from "@/components/OrderFromQuery";
-import { CONTENT_REVALIDATE_SECONDS } from "@/lib/cache-policy";
 
 export const metadata: Metadata = {
   title: "Order",
   robots: { index: false, follow: false },
 };
 
-export const revalidate = CONTENT_REVALIDATE_SECONDS;
+export const revalidate = 3600;
 
 export default function OrderPage() {
   return (

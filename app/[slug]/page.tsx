@@ -3,7 +3,6 @@ import { notFound } from "next/navigation";
 import { CustomerCarePage } from "@/components/CustomerCarePage";
 import { PolicyPageView } from "@/components/PolicyPageView";
 import { getSiteSettings } from "@/lib/api";
-import { CONTENT_REVALIDATE_SECONDS } from "@/lib/cache-policy";
 import { CUSTOMER_CARE_SLUGS, customerCareBySlug } from "@/lib/customer-care";
 import { layoutForTrustSlug, trustBySlug, trustPages } from "@/lib/trust";
 import {
@@ -12,7 +11,7 @@ import {
   policyBySlug,
 } from "@/lib/policy-pages";
 
-export const revalidate = CONTENT_REVALIDATE_SECONDS;
+export const revalidate = 3600;
 export const dynamicParams = false;
 
 export function generateStaticParams() {
