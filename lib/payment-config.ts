@@ -142,10 +142,14 @@ const BLOB_PATH = "payments/config.enc";
 const PAYMENT_CONFIG_TAG = "payment-config";
 /**
  * Process-local copy so checkout requests do not hit the data cache on every
- * call. Kept short so other instances pick up an admin save within a minute.
+ * call. Other instances pick up an admin save within this window.
  * Admin saves on this instance replace it immediately.
  */
-const MEMORY_TTL_MS = 60 * 1000;
+const MEMORY_TTL_MS = 5 * 60 * 1000;
+/** After a failed Blob read with nothing cached, try again this soon. */
+const ERROR_RETRY_MS = 30 * 1000;
+
+class EnvelopeMissingError extends Error {}
 
 type EnvelopeCache = { found: false } | { found: true; raw: string };
 
@@ -284,29 +288,45 @@ async function readEnvelopeFromOrigin(): Promise<EnvelopeCache> {
   return { found: true, raw: await new Response(result.stream).text() };
 }
 
-/** Held until an admin save calls updateTag, so origin reads stay rare. */
+/**
+ * Held until an admin save calls updateTag, so origin reads stay rare.
+ * A missing file throws so it is never stored without expiry.
+ */
 const readEnvelopeCached = unstable_cache(
-  readEnvelopeFromOrigin,
+  async () => {
+    const entry = await readEnvelopeFromOrigin();
+    if (!entry.found) throw new EnvelopeMissingError();
+    return entry.raw;
+  },
   ["payments-config-envelope"],
   { revalidate: false, tags: [PAYMENT_CONFIG_TAG] },
 );
 
-function rememberEnvelope(raw: string | null) {
-  memory = { raw, at: Date.now() };
+function rememberEnvelope(raw: string | null, ttlMs = MEMORY_TTL_MS) {
+  memory = { raw, at: Date.now() - (MEMORY_TTL_MS - ttlMs) };
 }
 
 async function loadEnvelope(fresh = false): Promise<string | null> {
   try {
-    const entry = fresh ? await readEnvelopeFromOrigin() : await readEnvelopeCached();
-    const raw = entry.found ? entry.raw : null;
+    let raw: string | null;
+    if (fresh) {
+      const entry = await readEnvelopeFromOrigin();
+      raw = entry.found ? entry.raw : null;
+    } else {
+      raw = await readEnvelopeCached();
+    }
     rememberEnvelope(raw);
     return raw;
-  } catch {
-    if (memory) {
-      memory = { raw: memory.raw, at: Date.now() };
+  } catch (error) {
+    if (error instanceof EnvelopeMissingError) {
+      rememberEnvelope(null);
+      return null;
+    }
+    if (memory?.raw) {
+      rememberEnvelope(memory.raw, ERROR_RETRY_MS);
       return memory.raw;
     }
-    rememberEnvelope(null);
+    rememberEnvelope(null, ERROR_RETRY_MS);
     return null;
   }
 }
