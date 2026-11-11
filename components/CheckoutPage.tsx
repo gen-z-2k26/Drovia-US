@@ -130,7 +130,8 @@ function blockToAddress(
 }
 
 function methodLabel(kind: CheckoutPaymentKind) {
-  if (kind === "stripe" || kind === "reign") return "Credit card";
+  if (kind === "stripe") return "Credit card";
+  if (kind === "reign") return "Card (Reign)";
   if (kind === "paypal") return "PayPal";
   if (kind === "affirm") return "Affirm";
   return "Afterpay";
@@ -645,7 +646,8 @@ export function CheckoutPage() {
     Boolean(stripePublishableKey) &&
     paymentMethods.some((method) => method.kind === "stripe") &&
     minor >= 1;
-  const severalMethods = paymentMethods.length > 1;
+  const severalMethods =
+    paymentMethods.length > 1 || paymentMethods[0]?.kind === "reign";
   const email = (same ? shipping.email : billing.email).trim();
   const payBilling = billingAddress();
   const walletRates = cart.shippingRates.map((rate) => ({
@@ -708,6 +710,32 @@ export function CheckoutPage() {
   );
 
   const stripeCardShown = paymentKind === "stripe" && stripeReady;
+
+  const reignPayment = (
+    <ReignPayment
+      amount={cart.totals.total}
+      currency={cart.totals.currency}
+      publishableKey={reign.publishableKey}
+      scriptSrc={reign.scriptSrc}
+      scriptIntegrity={reign.scriptIntegrity}
+      cardholderName={`${payBilling.firstName} ${payBilling.lastName}`.trim()}
+      prepare={async () => {
+        if (!validate()) return null;
+        const session = await paySeparate("reign");
+        if (!session?.reignSessionId) return null;
+        return {
+          orderId: session.orderId,
+          orderKey: session.orderKey,
+          sessionId: session.reignSessionId,
+          clientSecret: session.clientSecret,
+          amount: session.amount,
+          currency: session.currency,
+        };
+      }}
+      onPaid={finishPaid}
+      onError={(message) => setErrors({ form: message })}
+    />
+  );
 
   function stripeCard(wallets: "auto" | "never") {
     return (
@@ -1102,6 +1130,11 @@ export function CheckoutPage() {
                               {stripeCard("never")}
                             </div>
                           ) : null}
+                          {selected && method.kind === "reign" && !mockPayment ? (
+                            <div className="border-t border-border bg-background px-4 py-4">
+                              {reignPayment}
+                            </div>
+                          ) : null}
                         </div>
                       );
                     })}
@@ -1176,29 +1209,7 @@ export function CheckoutPage() {
                   onError={(message) => setErrors({ form: message })}
                 />
               ) : paymentKind === "reign" ? (
-                <ReignPayment
-                  amount={cart.totals.total}
-                  currency={cart.totals.currency}
-                  publishableKey={reign.publishableKey}
-                  scriptSrc={reign.scriptSrc}
-                  scriptIntegrity={reign.scriptIntegrity}
-                  cardholderName={`${payBilling.firstName} ${payBilling.lastName}`.trim()}
-                  prepare={async () => {
-                    if (!validate()) return null;
-                    const session = await paySeparate("reign");
-                    if (!session?.reignSessionId) return null;
-                    return {
-                      orderId: session.orderId,
-                      orderKey: session.orderKey,
-                      sessionId: session.reignSessionId,
-                      clientSecret: session.clientSecret,
-                      amount: session.amount,
-                      currency: session.currency,
-                    };
-                  }}
-                  onPaid={finishPaid}
-                  onError={(message) => setErrors({ form: message })}
-                />
+                severalMethods ? null : reignPayment
               ) : paymentKind === "afterpay" ? (
                 <div className="space-y-3">
                   <p className="text-sm text-muted-foreground">
