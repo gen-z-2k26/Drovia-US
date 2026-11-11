@@ -302,6 +302,8 @@ type ReignClient = {
     number: string;
     expiry: string;
     cvc: string;
+    style?: { base?: Record<string, string>; placeholder?: Record<string, string> };
+    placeholders?: Partial<Record<"number" | "expiry" | "cvc", string>>;
   }) => ReignCard;
   confirmPayment: (options: {
     paymentSessionId: string;
@@ -398,12 +400,32 @@ export function ReignPayment({
         const factory = (window as ReignWindow).ReignPayments;
         if (!factory) throw new Error("Card payment could not be loaded.");
         const client = factory({ publishableKey });
+        // The fields live in Spreedly iframes, which cannot read our CSS variables.
+        const host = document.getElementById("reign-card-number");
+        const computed = host ? getComputedStyle(host) : null;
+        const color = computed?.color || "#111111";
         const card = client.card({
           paymentSessionId: session.sessionId,
           clientSecret: session.clientSecret,
           number: "#reign-card-number",
           expiry: "#reign-card-expiry",
           cvc: "#reign-card-cvc",
+          style: {
+            base: {
+              color,
+              fontSize: "16px",
+              fontFamily:
+                "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
+              width: "100%",
+              height: "100%",
+              padding: "0",
+              border: "none",
+              outline: "none",
+              background: "transparent",
+            },
+            placeholder: { color, opacity: "0.5" },
+          },
+          placeholders: { number: "1234 1234 1234 1234", expiry: "MM / YY", cvc: "CVC" },
         });
         card.on("ready", () => {
           if (!cancelled) setReadyId(session.sessionId);
@@ -489,7 +511,7 @@ export function ReignPayment({
   }
 
   const frame =
-    "min-h-11 rounded-md border border-border bg-background px-3.5 py-2.5";
+    "h-11 overflow-hidden rounded-md border border-border bg-background px-3.5 text-foreground [&_iframe]:block [&_iframe]:h-full [&_iframe]:w-full [&_iframe]:border-0";
 
   return (
     <div className="space-y-4">
