@@ -754,6 +754,7 @@ const ICON_LABELS: Record<PaymentIconSlug, string> = {
   afterpay: "Afterpay",
   klarna: "Klarna",
   link: "Link",
+  reign: "Reign",
 };
 
 const ICON_ORDER: PaymentIconSlug[] = [

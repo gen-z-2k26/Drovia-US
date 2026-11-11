@@ -138,7 +138,7 @@ export type PaymentSettingsInput = {
   };
 };
 
-const BLOB_PATH = "payments/config.enc";
+const BLOB_PATH = process.env.PAYMENT_CONFIG_BLOB_PATH?.trim() || "payments/config.enc";
 const PAYMENT_CONFIG_TAG = "payment-config";
 /**
  * Process-local copy so checkout requests do not hit the data cache on every

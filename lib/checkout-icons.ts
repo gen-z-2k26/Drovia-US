@@ -19,6 +19,7 @@ const LABELS: Record<PaymentIconSlug, string> = {
   afterpay: "Afterpay",
   klarna: "Klarna",
   link: "Link",
+  reign: "Reign",
 };
 
 const CARD_DEFAULT: PaymentIconSlug[] = [
@@ -27,8 +28,6 @@ const CARD_DEFAULT: PaymentIconSlug[] = [
   "amex",
   "unionpay",
 ];
-
-const REIGN_BRANDS: PaymentIconSlug[] = ["visa", "mastercard", "amex", "discover"];
 
 export function iconsForCheckoutMethods(
   methods: CheckoutPaymentMethod[],
@@ -49,7 +48,7 @@ export function iconsForCheckoutMethods(
         add(brand);
       }
     } else if (method.kind === "reign") {
-      for (const brand of REIGN_BRANDS) add(brand);
+      add("reign");
     } else if (method.kind === "paypal") {
       add("paypal");
     } else if (method.kind === "affirm") {

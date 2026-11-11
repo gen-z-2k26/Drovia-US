@@ -79,7 +79,8 @@ export type PaymentIconSlug =
   | "affirm"
   | "afterpay"
   | "klarna"
-  | "link";
+  | "link"
+  | "reign";
 
 export interface GenericReview {
   reviewer: string;
