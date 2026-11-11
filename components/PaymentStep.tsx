@@ -498,8 +498,13 @@ export function ReignPayment({
         if (result.error.retry === "none") setSession(null);
         return;
       }
+      if (result.status !== "succeeded" && result.status !== "processing") {
+        onError("Your card was declined. Try another card or payment method.");
+        return;
+      }
       onPaid(await confirmOnServer(session));
     } catch (error) {
+      setNotice("");
       onError(userErrorMessage(error, "Card payment could not be completed."));
     } finally {
       setPaying(false);

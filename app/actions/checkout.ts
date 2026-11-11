@@ -625,6 +625,12 @@ async function completeCheckout(
     if (session.status === "processing" || session.status === "requires_action") {
       throw new Error("We are still confirming your payment. Please wait.");
     }
+    if (session.status === "requires_payment_method" || session.status === "expired") {
+      throw new Error(
+        session.lastError?.shopperMessage ||
+          "Your card was declined. Try another card or payment method.",
+      );
+    }
     if (session.status !== "succeeded") {
       throw new Error("Payment has not succeeded yet.");
     }
