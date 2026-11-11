@@ -31,7 +31,12 @@ export async function getEnabledCheckoutMethods(): Promise<
   }
   if (accounts.affirm.enabled && (await isAffirmConfigured())) enabled.push("affirm");
   if (accounts.afterpay.enabled && (await isAfterpayConfigured())) enabled.push("afterpay");
-  if (accounts.reign.enabled && (await isReignConfigured())) enabled.push("reign");
+  if (accounts.reign.enabled && (await isReignConfigured())) {
+    enabled.push("reign");
+    // Both show as "Credit card"; Reign takes the slot when it is on.
+    const stripeAt = enabled.indexOf("stripe");
+    if (stripeAt >= 0) enabled.splice(stripeAt, 1);
+  }
   return KIND_ORDER.filter((kind) => enabled.includes(kind)).map((kind) => ({
     kind,
     wooId: kind,
