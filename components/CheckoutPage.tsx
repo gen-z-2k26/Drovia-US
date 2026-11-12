@@ -733,7 +733,6 @@ export function CheckoutPage() {
         };
       }}
       onPaid={finishPaid}
-      onError={(message) => setErrors({ form: message })}
     />
   );
 
