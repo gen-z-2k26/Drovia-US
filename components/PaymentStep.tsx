@@ -360,8 +360,7 @@ export function ReignPayment({
   cardholderName,
   prepare,
   onPaid,
-  onError,
-}: Pick<PaymentStepProps, "amount" | "currency" | "onPaid" | "onError"> & {
+}: Pick<PaymentStepProps, "amount" | "currency" | "onPaid"> & {
   publishableKey: string;
   scriptSrc: string;
   scriptIntegrity: string;
@@ -374,13 +373,10 @@ export function ReignPayment({
   const [readyId, setReadyId] = useState("");
   const [paying, setPaying] = useState(false);
   const [notice, setNotice] = useState("");
+  const [error, setError] = useState("");
   const [name, setName] = useState(cardholderName);
   const clientRef = useRef<ReignClient | null>(null);
   const cardRef = useRef<ReignCard | null>(null);
-  const onErrorRef = useRef(onError);
-  useEffect(() => {
-    onErrorRef.current = onError;
-  }, [onError]);
 
   const configured = Boolean(publishableKey && scriptSrc && scriptIntegrity);
   const session =
@@ -431,13 +427,13 @@ export function ReignPayment({
           if (!cancelled) setReadyId(session.sessionId);
         });
         card.on("error", (error) => {
-          if (!cancelled) onErrorRef.current(error?.message || "Card fields did not load.");
+          if (!cancelled) setError(error?.message || "Card fields did not load.");
         });
         clientRef.current = client;
         cardRef.current = card;
       })
       .catch((error: unknown) => {
-        if (!cancelled) onErrorRef.current(userErrorMessage(error, "Card payment could not be loaded."));
+        if (!cancelled) setError(userErrorMessage(error, "Card payment could not be loaded."));
       });
     return () => {
       cancelled = true;
@@ -450,6 +446,7 @@ export function ReignPayment({
   async function start() {
     setStarting(true);
     setNotice("");
+    setError("");
     try {
       const next = await prepare();
       if (next) setSession(next);
@@ -481,11 +478,12 @@ export function ReignPayment({
     const card = cardRef.current;
     if (!session || !client || !card) return;
     if (!name.trim()) {
-      onError("Enter the name on the card.");
+      setError("Enter the name on the card.");
       return;
     }
     setPaying(true);
     setNotice("");
+    setError("");
     try {
       const result = await client.confirmPayment({
         paymentSessionId: session.sessionId,
@@ -494,18 +492,18 @@ export function ReignPayment({
         billingDetails: { name: name.trim() },
       });
       if (result.status === "requires_payment_method") {
-        onError(result.error.message || "Your card was declined.");
+        setError(result.error.message || "Your card was declined.");
         if (result.error.retry === "none") setSession(null);
         return;
       }
       if (result.status !== "succeeded" && result.status !== "processing") {
-        onError("Your card was declined. Try another card or payment method.");
+        setError("Your card was declined. Try another card or payment method.");
         return;
       }
       onPaid(await confirmOnServer(session));
     } catch (error) {
       setNotice("");
-      onError(userErrorMessage(error, "Card payment could not be completed."));
+      setError(userErrorMessage(error, "Card payment could not be completed."));
     } finally {
       setPaying(false);
     }
@@ -548,6 +546,9 @@ export function ReignPayment({
           </label>
           {notice ? (
             <p className="text-sm text-muted-foreground" role="status">{notice}</p>
+          ) : null}
+          {error ? (
+            <p className="text-sm text-destructive" role="alert">{error}</p>
           ) : null}
           <Button
             type="button"

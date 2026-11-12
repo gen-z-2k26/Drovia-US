@@ -622,6 +622,12 @@ async function completeCheckout(
       throw new Error("Payment does not match this order.");
     }
     const session = await getReignSession(paymentIntentId);
+    if (session.status !== "succeeded" && session.lastError) {
+      throw new Error(
+        session.lastError.shopperMessage ||
+          "Your card was declined. Try another card or payment method.",
+      );
+    }
     if (session.status === "processing" || session.status === "requires_action") {
       throw new Error("We are still confirming your payment. Please wait.");
     }
