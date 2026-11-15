@@ -2,7 +2,16 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { CreditCard, GripVertical, Loader2, LogOut, Store } from "lucide-react";
+import { Reorder, useDragControls } from "motion/react";
+import {
+  ChevronDown,
+  ChevronUp,
+  CreditCard,
+  GripVertical,
+  Loader2,
+  LogOut,
+  Store,
+} from "lucide-react";
 import {
   clearProviderAction,
   logoutAdminAction,
@@ -49,9 +58,6 @@ export function AdminDashboard({
     Partial<Record<PaymentProviderId, { ok: boolean; message: string }>>
   >({});
   const [pending, setPending] = useState("");
-  const [dragging, setDragging] = useState<PaymentProviderId | null>(null);
-  const [dropTarget, setDropTarget] = useState<PaymentProviderId | null>(null);
-
   async function save() {
     setPending("save");
     setError("");
@@ -132,22 +138,12 @@ export function AdminDashboard({
   const providers = form.order.map((id) => ({ id, ...catalog[id] }));
 
   function cardDrag(id: PaymentProviderId) {
-    return {
-      rank: form.order.indexOf(id),
-      dragging: dragging === id,
-      dropTarget: dropTarget === id && dragging !== null && dragging !== id,
-      onDragStart: () => setDragging(id),
-      onDragEnd: () => {
-        setDragging(null);
-        setDropTarget(null);
-      },
-      onDragOver: () => setDropTarget(id),
-      onDrop: () => {
-        if (dragging) reorder(dragging, id);
-        setDragging(null);
-        setDropTarget(null);
-      },
-    };
+    return { rank: form.order.indexOf(id) };
+  }
+
+  function move(id: PaymentProviderId, delta: number) {
+    const target = form.order[form.order.indexOf(id) + delta];
+    if (target) reorder(id, target);
   }
 
   function reorder(from: PaymentProviderId, to: PaymentProviderId) {
@@ -217,23 +213,34 @@ export function AdminDashboard({
         </header>
 
         <main className="mx-auto max-w-4xl space-y-6 px-5 py-6 md:px-8 md:py-8">
-          <section className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-            {providers.map((provider) => (
-              <a
-                key={provider.id}
-                href={`#${provider.id}`}
-                className="rounded-2xl border border-border bg-card px-4 py-3.5 transition-colors hover:border-foreground/20"
-              >
-                <GatewayMark id={provider.id} />
-                <span className="mt-3 flex items-center gap-2 text-sm font-medium">
-                  <span className={`size-1.5 rounded-full ${STATUS_DOT[provider.status]}`} />
-                  {provider.name}
-                </span>
-                <span className="mt-0.5 block text-xs text-muted-foreground">
-                  {STATUS_LABEL[provider.status]}
-                </span>
-              </a>
-            ))}
+          <section className="rounded-2xl border border-border bg-card">
+            <div className="border-b border-border px-5 py-4">
+              <h2 className="text-[15px] font-semibold tracking-tight">Checkout order</h2>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                Drag a row or use the arrows. Checkout lists the methods that are on in this order.
+              </p>
+            </div>
+            <Reorder.Group
+              as="ol"
+              axis="y"
+              values={form.order}
+              onReorder={(order: PaymentProviderId[]) =>
+                setForm((current) => ({ ...current, order }))
+              }
+              className="relative p-1.5"
+            >
+              {providers.map((provider, index) => (
+                <OrderRow
+                  key={provider.id}
+                  id={provider.id}
+                  name={provider.name}
+                  status={provider.status}
+                  index={index}
+                  last={index === providers.length - 1}
+                  onMove={(delta) => move(provider.id, delta)}
+                />
+              ))}
+            </Reorder.Group>
           </section>
 
           {!view.keyReady || !view.blobReady ? (
@@ -253,7 +260,7 @@ export function AdminDashboard({
           ) : null}
 
           <p className="text-sm text-muted-foreground">
-            Drag a method to choose the order shown at checkout. Turn it on to offer it. Leave a secret blank to keep the saved one. Secrets never return to this page.
+            Turn a method on to show it at checkout. Leave a secret blank to keep the saved one. Secrets never return to this page.
           </p>
 
           <div className="flex flex-col gap-4">
@@ -568,6 +575,80 @@ function GatewayMark({ id }: { id: PaymentProviderId }) {
   );
 }
 
+function OrderRow({
+  id,
+  name,
+  status,
+  index,
+  last,
+  onMove,
+}: {
+  id: PaymentProviderId;
+  name: string;
+  status: ProviderStatus;
+  index: number;
+  last: boolean;
+  onMove: (delta: number) => void;
+}) {
+  const controls = useDragControls();
+  return (
+    <Reorder.Item
+      as="li"
+      value={id}
+      dragListener={false}
+      dragControls={controls}
+      layout="position"
+      transition={{ type: "spring", stiffness: 500, damping: 40 }}
+      whileDrag={{
+        scale: 1.02,
+        boxShadow: "0 12px 32px -12px rgba(0,0,0,0.35)",
+        zIndex: 10,
+      }}
+      className="relative flex items-center gap-3 rounded-xl bg-card px-2 py-2 select-none"
+    >
+      <button
+        type="button"
+        aria-label={`Drag ${name}`}
+        onPointerDown={(event) => controls.start(event)}
+        className="cursor-grab touch-none rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground active:cursor-grabbing"
+      >
+        <GripVertical className="size-4" aria-hidden />
+      </button>
+      <span className="w-4 text-center text-xs font-medium text-muted-foreground tabular-nums">
+        {index + 1}
+      </span>
+      <GatewayMark id={id} />
+      <a href={`#${id}`} className="min-w-0 flex-1 text-sm font-medium hover:underline">
+        {name}
+      </a>
+      <span className="hidden items-center gap-1.5 text-xs text-muted-foreground sm:inline-flex">
+        <span className={`size-1.5 rounded-full ${STATUS_DOT[status]}`} />
+        {STATUS_LABEL[status]}
+      </span>
+      <div className="flex items-center">
+        <button
+          type="button"
+          aria-label={`Move ${name} up`}
+          disabled={index === 0}
+          onClick={() => onMove(-1)}
+          className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-30 disabled:hover:bg-transparent"
+        >
+          <ChevronUp className="size-4" aria-hidden />
+        </button>
+        <button
+          type="button"
+          aria-label={`Move ${name} down`}
+          disabled={last}
+          onClick={() => onMove(1)}
+          className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-30 disabled:hover:bg-transparent"
+        >
+          <ChevronDown className="size-4" aria-hidden />
+        </button>
+      </div>
+    </Reorder.Item>
+  );
+}
+
 function ProviderCard({
   id,
   title,
@@ -578,12 +659,6 @@ function ProviderCard({
   mode,
   onMode,
   rank,
-  dragging,
-  dropTarget,
-  onDragStart,
-  onDragEnd,
-  onDragOver,
-  onDrop,
   children,
 }: {
   id: PaymentProviderId;
@@ -595,45 +670,15 @@ function ProviderCard({
   mode?: PaymentMode;
   onMode?: (mode: PaymentMode) => void;
   rank: number;
-  dragging: boolean;
-  dropTarget: boolean;
-  onDragStart: () => void;
-  onDragEnd: () => void;
-  onDragOver: () => void;
-  onDrop: () => void;
   children: React.ReactNode;
 }) {
   return (
     <section
       id={id}
-      onDragOver={(event) => {
-        event.preventDefault();
-        onDragOver();
-      }}
-      onDrop={(event) => {
-        event.preventDefault();
-        onDrop();
-      }}
       style={{ order: rank }}
-      className={`scroll-mt-24 overflow-hidden rounded-2xl border bg-card ${
-        dropTarget ? "border-foreground" : "border-border"
-      } ${dragging ? "opacity-60" : ""}`}
+      className="scroll-mt-24 overflow-hidden rounded-2xl border border-border bg-card"
     >
       <div className="flex flex-wrap items-center gap-4 border-b border-border px-5 py-4">
-        <button
-          type="button"
-          draggable
-          aria-label={`Drag ${title}`}
-          onDragStart={(event) => {
-            event.dataTransfer.setData("text/plain", id);
-            event.dataTransfer.effectAllowed = "move";
-            onDragStart();
-          }}
-          onDragEnd={onDragEnd}
-          className="cursor-grab rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground active:cursor-grabbing"
-        >
-          <GripVertical className="size-4" aria-hidden />
-        </button>
         <GatewayMark id={id} />
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
