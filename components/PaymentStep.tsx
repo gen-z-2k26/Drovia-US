@@ -104,6 +104,43 @@ function MockPaymentForm({
 
 
 const paypalScripts = new Map<string, Promise<void>>();
+const PAYPAL_SESSION_KEY = "drovia-paypal-checkout";
+
+function rememberPayPalSession(session: {
+  orderId: string;
+  orderKey: string;
+  paypalOrderId: string;
+}) {
+  try {
+    sessionStorage.setItem(PAYPAL_SESSION_KEY, JSON.stringify(session));
+  } catch {
+    // Private mode can block storage; the pending checkout cookie still has the ids.
+  }
+}
+
+function rememberedPayPalSession(): {
+  orderId: string;
+  orderKey: string;
+  paypalOrderId: string;
+} | null {
+  try {
+    const raw = sessionStorage.getItem(PAYPAL_SESSION_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as {
+      orderId?: string;
+      orderKey?: string;
+      paypalOrderId?: string;
+    };
+    if (!parsed.orderId || !parsed.paypalOrderId) return null;
+    return {
+      orderId: parsed.orderId,
+      orderKey: parsed.orderKey || "",
+      paypalOrderId: parsed.paypalOrderId,
+    };
+  } catch {
+    return null;
+  }
+}
 
 function loadPayPal(clientId: string, currency: string) {
   const src = `https://www.paypal.com/sdk/js?client-id=${encodeURIComponent(clientId)}&currency=${encodeURIComponent(currency)}&intent=capture`;
@@ -166,7 +203,7 @@ export function PayPalPayment({
     orderKey: string;
     paypalOrderId: string;
   } | null>(null);
-  const blockedRef = useRef(false);
+  const payingRef = useRef(false);
   const { settings } = useStore();
   const clientId = paypalClientId.trim();
   useEffect(() => {
@@ -180,7 +217,8 @@ export function PayPalPayment({
   }, [onPaid, onError, prepare, canStart, orderId, orderKey, clientSecret]);
 
   useEffect(() => {
-    if (!clientId || !slot.current) return;
+    const code = currency.trim();
+    if (!clientId || !code || !slot.current || payingRef.current) return;
     let cancelled = false;
     let buttons: { close?: () => Promise<void> } | null = null;
 
@@ -193,10 +231,6 @@ export function PayPalPayment({
               onApprove: (data?: { orderID?: string }) => Promise<void>;
               onError: (error: { message?: string }) => void;
               onCancel: () => void;
-              onClick?: (
-                data: unknown,
-                actions: { resolve: () => void; reject: () => void },
-              ) => void;
             }) => {
               render: (target: HTMLElement) => Promise<void>;
               close?: () => Promise<void>;
@@ -209,16 +243,12 @@ export function PayPalPayment({
       slot.current.replaceChildren(target);
       const instance = paypal
         .Buttons({
-          onClick: (_data, actions) => {
-            if (canStartRef.current && !canStartRef.current()) {
-              blockedRef.current = true;
-              actions.reject();
-              return;
-            }
-            blockedRef.current = false;
-            actions.resolve();
-          },
           createOrder: async () => {
+            payingRef.current = true;
+            try {
+            if (canStartRef.current && !canStartRef.current()) {
+              throw new Error("Fill in all the required fields.");
+            }
             if (prepareRef.current) {
               const next = await prepareRef.current();
               if (!next?.paypalOrderId || !next.orderId) {
@@ -230,22 +260,28 @@ export function PayPalPayment({
                 paypalOrderId: next.paypalOrderId,
               };
               orderRef.current = preparedRef.current;
+              rememberPayPalSession(preparedRef.current);
               return next.paypalOrderId;
             }
             return orderRef.current.paypalOrderId;
+            } catch (error) {
+              payingRef.current = false;
+              throw error;
+            }
           },
           onApprove: async (data) => {
-            const current = preparedRef.current ?? orderRef.current;
-            const paypalOrderId = current.paypalOrderId || data?.orderID || "";
-            if (!current.orderId || !paypalOrderId) {
-              onErrorRef.current("Payment confirmation is incomplete.");
-              return;
-            }
+            const saved = preparedRef.current ?? rememberedPayPalSession() ?? orderRef.current;
+            const paypalOrderId = data?.orderID || saved.paypalOrderId || "";
+            preparedRef.current = {
+              orderId: saved.orderId,
+              orderKey: saved.orderKey,
+              paypalOrderId,
+            };
             try {
               const result = unwrapResult(
                 await completeCheckoutAction({
-                  orderId: current.orderId,
-                  orderKey: current.orderKey,
+                  orderId: saved.orderId,
+                  orderKey: saved.orderKey,
                   paymentIntentId: paypalOrderId,
                   provider: "paypal",
                 }),
@@ -253,17 +289,19 @@ export function PayPalPayment({
               onPaidRef.current(result);
             } catch (error) {
               onErrorRef.current(userErrorMessage(error, "PayPal could not be completed."));
+            } finally {
+              payingRef.current = false;
             }
           },
           onCancel: () => {
+            payingRef.current = false;
             onErrorRef.current("PayPal payment was cancelled.");
           },
           onError: (error) => {
-            if (blockedRef.current) {
-              blockedRef.current = false;
-              return;
-            }
-            onErrorRef.current(error.message || "PayPal could not be completed.");
+            payingRef.current = false;
+            const message = error.message || "";
+            if (message === "Fill in all the required fields.") return;
+            onErrorRef.current(message || "PayPal could not be completed.");
           },
         });
       buttons = instance;
@@ -272,7 +310,7 @@ export function PayPalPayment({
       });
     }
 
-    loadPayPal(clientId, currency)
+    loadPayPal(clientId, code)
       .then(() => {
         if (!cancelled) render();
       })
@@ -280,10 +318,11 @@ export function PayPalPayment({
         if (!cancelled) onErrorRef.current(userErrorMessage(error, "PayPal could not be loaded."));
       });
     return () => {
+      if (payingRef.current) return;
       cancelled = true;
       void buttons?.close?.().catch(() => undefined);
     };
-  }, [clientId, clientSecret, currency, orderId, orderKey]);
+  }, [clientId, currency]);
 
   if (!clientId) {
     return <Unavailable>PayPal is not available right now.</Unavailable>;
