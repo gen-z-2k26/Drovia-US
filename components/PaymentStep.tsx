@@ -161,6 +161,12 @@ export function PayPalPayment({
   const prepareRef = useRef(prepare);
   const canStartRef = useRef(canStart);
   const orderRef = useRef({ orderId, orderKey, paypalOrderId: clientSecret });
+  const preparedRef = useRef<{
+    orderId: string;
+    orderKey: string;
+    paypalOrderId: string;
+  } | null>(null);
+  const blockedRef = useRef(false);
   const { settings } = useStore();
   const clientId = paypalClientId.trim();
   useEffect(() => {
@@ -168,7 +174,9 @@ export function PayPalPayment({
     onErrorRef.current = onError;
     prepareRef.current = prepare;
     canStartRef.current = canStart;
-    orderRef.current = { orderId, orderKey, paypalOrderId: clientSecret };
+    if (orderId && clientSecret) {
+      orderRef.current = { orderId, orderKey, paypalOrderId: clientSecret };
+    }
   }, [onPaid, onError, prepare, canStart, orderId, orderKey, clientSecret]);
 
   useEffect(() => {
@@ -182,7 +190,7 @@ export function PayPalPayment({
           paypal?: {
             Buttons: (options: {
               createOrder: () => Promise<string>;
-              onApprove: () => Promise<void>;
+              onApprove: (data?: { orderID?: string }) => Promise<void>;
               onError: (error: { message?: string }) => void;
               onCancel: () => void;
               onClick?: (
@@ -203,34 +211,42 @@ export function PayPalPayment({
         .Buttons({
           onClick: (_data, actions) => {
             if (canStartRef.current && !canStartRef.current()) {
+              blockedRef.current = true;
               actions.reject();
               return;
             }
+            blockedRef.current = false;
             actions.resolve();
           },
           createOrder: async () => {
             if (prepareRef.current) {
               const next = await prepareRef.current();
-              if (!next?.paypalOrderId) {
+              if (!next?.paypalOrderId || !next.orderId) {
                 throw new Error("PayPal could not be started.");
               }
-              orderRef.current = {
+              preparedRef.current = {
                 orderId: next.orderId,
                 orderKey: next.orderKey,
                 paypalOrderId: next.paypalOrderId,
               };
+              orderRef.current = preparedRef.current;
               return next.paypalOrderId;
             }
             return orderRef.current.paypalOrderId;
           },
-          onApprove: async () => {
-            const current = orderRef.current;
+          onApprove: async (data) => {
+            const current = preparedRef.current ?? orderRef.current;
+            const paypalOrderId = current.paypalOrderId || data?.orderID || "";
+            if (!current.orderId || !paypalOrderId) {
+              onErrorRef.current("Payment confirmation is incomplete.");
+              return;
+            }
             try {
               const result = unwrapResult(
                 await completeCheckoutAction({
                   orderId: current.orderId,
                   orderKey: current.orderKey,
-                  paymentIntentId: current.paypalOrderId,
+                  paymentIntentId: paypalOrderId,
                   provider: "paypal",
                 }),
               );
@@ -243,6 +259,10 @@ export function PayPalPayment({
             onErrorRef.current("PayPal payment was cancelled.");
           },
           onError: (error) => {
+            if (blockedRef.current) {
+              blockedRef.current = false;
+              return;
+            }
             onErrorRef.current(error.message || "PayPal could not be completed.");
           },
         });
