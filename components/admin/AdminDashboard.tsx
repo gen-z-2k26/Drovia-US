@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { CreditCard, Loader2, LogOut, Store } from "lucide-react";
+import { CreditCard, GripVertical, Loader2, LogOut, Store } from "lucide-react";
 import {
   clearProviderAction,
   logoutAdminAction,
@@ -49,6 +49,8 @@ export function AdminDashboard({
     Partial<Record<PaymentProviderId, { ok: boolean; message: string }>>
   >({});
   const [pending, setPending] = useState("");
+  const [dragging, setDragging] = useState<PaymentProviderId | null>(null);
+  const [dropTarget, setDropTarget] = useState<PaymentProviderId | null>(null);
 
   async function save() {
     setPending("save");
@@ -120,13 +122,46 @@ export function AdminDashboard({
     }
   }
 
-  const providers: { id: PaymentProviderId; name: string; status: ProviderStatus }[] = [
-    { id: "stripe", name: "Stripe", status: view.stripe.status },
-    { id: "paypal", name: "PayPal", status: view.paypal.status },
-    { id: "affirm", name: "Affirm", status: view.affirm.status },
-    { id: "afterpay", name: "Afterpay", status: view.afterpay.status },
-    { id: "reign", name: "Reign", status: view.reign.status },
-  ];
+  const catalog: Record<PaymentProviderId, { name: string; status: ProviderStatus }> = {
+    stripe: { name: "Stripe", status: view.stripe.status },
+    paypal: { name: "PayPal", status: view.paypal.status },
+    affirm: { name: "Affirm", status: view.affirm.status },
+    afterpay: { name: "Afterpay", status: view.afterpay.status },
+    reign: { name: "Reign", status: view.reign.status },
+  };
+  const providers = form.order.map((id) => ({ id, ...catalog[id] }));
+
+  function cardDrag(id: PaymentProviderId) {
+    return {
+      rank: form.order.indexOf(id),
+      dragging: dragging === id,
+      dropTarget: dropTarget === id && dragging !== null && dragging !== id,
+      onDragStart: () => setDragging(id),
+      onDragEnd: () => {
+        setDragging(null);
+        setDropTarget(null);
+      },
+      onDragOver: () => setDropTarget(id),
+      onDrop: () => {
+        if (dragging) reorder(dragging, id);
+        setDragging(null);
+        setDropTarget(null);
+      },
+    };
+  }
+
+  function reorder(from: PaymentProviderId, to: PaymentProviderId) {
+    if (from === to) return;
+    setForm((current) => {
+      const next = [...current.order];
+      const fromIndex = next.indexOf(from);
+      const toIndex = next.indexOf(to);
+      if (fromIndex < 0 || toIndex < 0) return current;
+      next.splice(fromIndex, 1);
+      next.splice(toIndex, 0, from);
+      return { ...current, order: next };
+    });
+  }
 
   return (
     <div className="min-h-screen bg-background text-foreground lg:grid lg:h-screen lg:grid-cols-[232px_1fr] lg:overflow-hidden">
@@ -218,11 +253,12 @@ export function AdminDashboard({
           ) : null}
 
           <p className="text-sm text-muted-foreground">
-            Turn a method on to show it at checkout. Leave a secret blank to keep the saved one. Secrets never return to this page.
+            Drag a method to choose the order shown at checkout. Turn it on to offer it. Leave a secret blank to keep the saved one. Secrets never return to this page.
           </p>
 
-          <div className="space-y-4">
+          <div className="flex flex-col gap-4">
             <ProviderCard
+              {...cardDrag("stripe")}
               id="stripe"
               title="Stripe"
               detail="Publishable key and secret or restricted key"
@@ -272,6 +308,7 @@ export function AdminDashboard({
             </ProviderCard>
 
             <ProviderCard
+              {...cardDrag("paypal")}
               id="paypal"
               title="PayPal"
               detail="Client ID and client secret"
@@ -313,6 +350,7 @@ export function AdminDashboard({
             </ProviderCard>
 
             <ProviderCard
+              {...cardDrag("affirm")}
               id="affirm"
               title="Affirm"
               detail="Public key and private key"
@@ -354,6 +392,7 @@ export function AdminDashboard({
             </ProviderCard>
 
             <ProviderCard
+              {...cardDrag("afterpay")}
               id="afterpay"
               title="Afterpay"
               detail="Merchant ID and secret key"
@@ -398,6 +437,7 @@ export function AdminDashboard({
             </ProviderCard>
 
             <ProviderCard
+              {...cardDrag("reign")}
               id="reign"
               title="Reign"
               detail="Payments API publishable key, secret key and Reign.js tag. USD only."
@@ -472,6 +512,7 @@ export function AdminDashboard({
 
 function formFromView(view: AdminPaymentView): PaymentSettingsInput {
   return {
+    order: view.order,
     stripe: {
       enabled: view.stripe.enabled,
       publishableKey: view.stripe.publishableKey,
@@ -536,6 +577,13 @@ function ProviderCard({
   onEnabled,
   mode,
   onMode,
+  rank,
+  dragging,
+  dropTarget,
+  onDragStart,
+  onDragEnd,
+  onDragOver,
+  onDrop,
   children,
 }: {
   id: PaymentProviderId;
@@ -546,11 +594,46 @@ function ProviderCard({
   onEnabled: (enabled: boolean) => void;
   mode?: PaymentMode;
   onMode?: (mode: PaymentMode) => void;
+  rank: number;
+  dragging: boolean;
+  dropTarget: boolean;
+  onDragStart: () => void;
+  onDragEnd: () => void;
+  onDragOver: () => void;
+  onDrop: () => void;
   children: React.ReactNode;
 }) {
   return (
-    <section id={id} className="scroll-mt-24 overflow-hidden rounded-2xl border border-border bg-card">
+    <section
+      id={id}
+      onDragOver={(event) => {
+        event.preventDefault();
+        onDragOver();
+      }}
+      onDrop={(event) => {
+        event.preventDefault();
+        onDrop();
+      }}
+      style={{ order: rank }}
+      className={`scroll-mt-24 overflow-hidden rounded-2xl border bg-card ${
+        dropTarget ? "border-foreground" : "border-border"
+      } ${dragging ? "opacity-60" : ""}`}
+    >
       <div className="flex flex-wrap items-center gap-4 border-b border-border px-5 py-4">
+        <button
+          type="button"
+          draggable
+          aria-label={`Drag ${title}`}
+          onDragStart={(event) => {
+            event.dataTransfer.setData("text/plain", id);
+            event.dataTransfer.effectAllowed = "move";
+            onDragStart();
+          }}
+          onDragEnd={onDragEnd}
+          className="cursor-grab rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground active:cursor-grabbing"
+        >
+          <GripVertical className="size-4" aria-hidden />
+        </button>
         <GatewayMark id={id} />
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
