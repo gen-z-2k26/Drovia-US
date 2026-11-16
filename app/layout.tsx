@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Script from "next/script";
+import { Analytics } from "@vercel/analytics/next";
 import { Figtree, Syne } from "next/font/google";
 import { ChatbotGate } from "@/components/ChatbotGate";
 import { JsonLd } from "@/components/JsonLd";
@@ -198,6 +199,7 @@ export default async function RootLayout({
           </StoreProvider>
         </ThemeModeProvider>
         <ChatbotGate />
+        <Analytics />
       </body>
     </html>
   );
