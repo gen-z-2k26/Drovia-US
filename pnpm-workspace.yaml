@@ -1,2 +1,7 @@
 allowBuilds:
+  esbuild: true
   unrs-resolver: true
+
+# Local vendored kit, not on npm. pnpm's lockfile age check would 404 the registry.
+minimumReleaseAgeExclude:
+  - "@wp-chatbot/nextjs"

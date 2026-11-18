@@ -25,6 +25,8 @@ const OTHER_SCRIPTS = [
   "https://cdn1-sandbox.affirm.com",
   "https://js.afterpay.com",
   "https://portal.afterpay.com",
+  "https://js.squarecdn.com",
+  "https://js-sandbox.squarecdn.com",
 ];
 const OTHER_FRAMES = [
   "https://js.stripe.com",
@@ -33,12 +35,15 @@ const OTHER_FRAMES = [
   "https://*.paypal.com",
   "https://*.affirm.com",
   "https://*.afterpay.com",
+  "https://js.squarecdn.com",
+  "https://js-sandbox.squarecdn.com",
 ];
 const OTHER_CONNECT = [
   "https://api.stripe.com",
   "https://*.paypal.com",
   "https://*.affirm.com",
   "https://*.afterpay.com",
+  "https://*.squarecdn.com",
 ];
 
 const OTHER_ASSETS = [
@@ -46,6 +51,7 @@ const OTHER_ASSETS = [
   "https://*.paypalobjects.com",
   "https://*.affirm.com",
   "https://*.afterpay.com",
+  "https://*.squarecdn.com",
 ];
 
 let themeHash: Promise<string> | null = null;

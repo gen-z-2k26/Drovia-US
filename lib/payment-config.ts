@@ -66,6 +66,8 @@ type AfterpaySecrets = {
   secret: string;
   mpid: string;
   placementId: string;
+  cartPlacementId: string;
+  homepagePlacementId: string;
 };
 
 type ReignSecrets = {
@@ -122,6 +124,8 @@ export type AdminPaymentView = {
     secretHint: string;
     mpid: string;
     placementId: string;
+    cartPlacementId: string;
+    homepagePlacementId: string;
     status: ProviderStatus;
   };
   reign: {
@@ -159,6 +163,10 @@ export type PaymentSettingsInput = {
     mode: PaymentMode;
     merchantId: string;
     secret: string;
+    mpid: string;
+    placementId: string;
+    cartPlacementId: string;
+    homepagePlacementId: string;
   };
   reign: {
     enabled: boolean;
@@ -219,6 +227,8 @@ function emptyStored(): StoredPaymentConfig {
       secret: "",
       mpid: "",
       placementId: "",
+      cartPlacementId: "",
+      homepagePlacementId: "",
     },
     reign: {
       enabled: false,
@@ -405,7 +415,13 @@ function normalizeStored(value: Partial<StoredPaymentConfig>): StoredPaymentConf
     stripe: { ...base.stripe, ...value.stripe },
     paypal: { ...base.paypal, ...value.paypal },
     affirm: { ...base.affirm, ...value.affirm },
-    afterpay: { ...base.afterpay, ...value.afterpay },
+    afterpay: {
+      ...base.afterpay,
+      ...value.afterpay,
+      cartPlacementId: value.afterpay?.cartPlacementId ?? base.afterpay.cartPlacementId,
+      homepagePlacementId:
+        value.afterpay?.homepagePlacementId ?? base.afterpay.homepagePlacementId,
+    },
     reign: { ...base.reign, ...value.reign },
   };
 }
@@ -477,8 +493,10 @@ export async function getAdminPaymentView(options?: {
       mode: accounts.afterpay.mode,
       merchantId: accounts.afterpay.merchantId,
       secretHint: maskSecret(accounts.afterpay.secret),
-      mpid: accounts.afterpay.mpid,
-      placementId: accounts.afterpay.placementId,
+      mpid: accounts.afterpay.mpid || "",
+      placementId: accounts.afterpay.placementId || "",
+      cartPlacementId: accounts.afterpay.cartPlacementId || "",
+      homepagePlacementId: accounts.afterpay.homepagePlacementId || "",
       status: statuses[3],
     },
     reign: {
@@ -569,8 +587,18 @@ export function validatePaymentInput(input: PaymentSettingsInput, resolved: Stor
       mode: mode(input.afterpay.mode),
       merchantId: input.afterpay.merchantId.trim() || resolved.afterpay.merchantId,
       secret: input.afterpay.secret.trim() || resolved.afterpay.secret,
-      mpid: resolved.afterpay.mpid,
-      placementId: resolved.afterpay.placementId,
+      mpid: (input.afterpay.mpid ?? resolved.afterpay.mpid ?? "").trim(),
+      placementId: (input.afterpay.placementId ?? resolved.afterpay.placementId ?? "").trim(),
+      cartPlacementId: (
+        input.afterpay.cartPlacementId ??
+        resolved.afterpay.cartPlacementId ??
+        ""
+      ).trim(),
+      homepagePlacementId: (
+        input.afterpay.homepagePlacementId ??
+        resolved.afterpay.homepagePlacementId ??
+        ""
+      ).trim(),
     },
     reign: {
       enabled: input.reign.enabled,
@@ -627,6 +655,8 @@ export async function clearProviderSecrets(provider: PaymentProviderId) {
     next.afterpay.secret = "";
     next.afterpay.mpid = "";
     next.afterpay.placementId = "";
+    next.afterpay.cartPlacementId = "";
+    next.afterpay.homepagePlacementId = "";
   }
   await writeStored(next);
 }
@@ -667,8 +697,20 @@ export function checkoutPublicConfig(accounts: PaymentAccounts) {
     paypalClientId: accounts.paypal.enabled ? accounts.paypal.clientId : "",
     affirmPublicKey: accounts.affirm.enabled ? accounts.affirm.publicKey : "",
     affirmEnv: accounts.affirm.mode,
-    afterpayMpid: accounts.afterpay.enabled ? accounts.afterpay.mpid : "",
-    afterpayPlacementId: accounts.afterpay.enabled ? accounts.afterpay.placementId : "",
+    afterpayEnabled: Boolean(
+      accounts.afterpay.enabled && accounts.afterpay.merchantId && accounts.afterpay.secret,
+    ),
+    afterpayMode: accounts.afterpay.mode,
+    afterpayMpid: accounts.afterpay.enabled ? accounts.afterpay.mpid || "" : "",
+    afterpayPlacementId: accounts.afterpay.enabled
+      ? accounts.afterpay.placementId || ""
+      : "",
+    afterpayCartPlacementId: accounts.afterpay.enabled
+      ? accounts.afterpay.cartPlacementId || ""
+      : "",
+    afterpayHomepagePlacementId: accounts.afterpay.enabled
+      ? accounts.afterpay.homepagePlacementId || ""
+      : "",
     reignPublishableKey: accounts.reign.enabled ? accounts.reign.publishableKey : "",
     reignScriptSrc: accounts.reign.enabled ? accounts.reign.scriptSrc : "",
     reignScriptIntegrity: accounts.reign.enabled ? accounts.reign.scriptIntegrity : "",

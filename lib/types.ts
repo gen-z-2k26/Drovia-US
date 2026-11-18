@@ -338,8 +338,12 @@ export interface PaymentMethodIcon {
 export interface BnplPublicConfig {
   affirmPublicKey: string;
   affirmEnv: "sandbox" | "live";
+  afterpayEnabled: boolean;
+  afterpayMode: "sandbox" | "live";
   afterpayMpid: string;
   afterpayPlacementId: string;
+  afterpayCartPlacementId: string;
+  afterpayHomepagePlacementId: string;
 }
 
 export interface ProductCategoryRef {

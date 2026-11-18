@@ -22,6 +22,7 @@ import { applyCouponAction, removeCouponAction } from "@/app/actions/cart";
 import { unwrapCart } from "@/lib/cart-result";
 import { userErrorMessage } from "@/lib/user-error";
 import { toast } from "@/lib/toast-store";
+import { AfterpayMessaging } from "@/components/AfterpayMessaging";
 
 export function CartDrawer() {
   const { settings } = useStore();
@@ -181,6 +182,11 @@ export function CartDrawer() {
                       {formatPrice(totals.total, settings)}
                     </span>
                   </div>
+                  <AfterpayMessaging
+                    pageType="cart"
+                    amount={totals.total}
+                    skus={items.map((item) => item.productId).join(",")}
+                  />
                 </div>
               </div>
             ) : null}

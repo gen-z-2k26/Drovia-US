@@ -5,6 +5,8 @@ import { ChatbotGate } from "@/components/ChatbotGate";
 import { JsonLd } from "@/components/JsonLd";
 import { SiteChrome } from "@/components/SiteChrome";
 import { StaleDeployGuard } from "@/components/StaleDeployGuard";
+import { BnplProvider } from "@/lib/bnpl-context";
+import { getBnplPublicConfigSafe } from "@/lib/bnpl-server";
 import { StoreProvider } from "@/lib/store-context";
 import { ThemeModeProvider } from "@/lib/theme-mode";
 import { getSiteSettings, getSiteUrl } from "@/lib/api";
@@ -123,6 +125,7 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const settings = await getSiteSettings();
+  const bnpl = await getBnplPublicConfigSafe();
   const siteUrl = getSiteUrl(settings);
   const absolute = (path: string) =>
     siteUrl ? `${siteUrl}${path.startsWith("/") ? path : `/${path}`}` : path;
@@ -192,9 +195,11 @@ export default async function RootLayout({
         <StaleDeployGuard />
         <ThemeModeProvider defaultMode={settings.theme.defaultMode}>
           <StoreProvider settings={{ ...settings, pages: defaultPages }}>
-            <SiteChrome settings={{ ...settings, pages: defaultPages }}>
-              {children}
-            </SiteChrome>
+            <BnplProvider config={bnpl}>
+              <SiteChrome settings={{ ...settings, pages: defaultPages }}>
+                {children}
+              </SiteChrome>
+            </BnplProvider>
           </StoreProvider>
         </ThemeModeProvider>
         <ChatbotGate />

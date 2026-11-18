@@ -17,6 +17,7 @@ import { addProductToCart, isCatalogConflictError } from "@/lib/add-to-cart";
 import { userErrorMessage } from "@/lib/user-error";
 import { useCartStore } from "@/lib/cart-store";
 import { useStore } from "@/lib/store-context";
+import { AfterpayMessaging } from "@/components/AfterpayMessaging";
 import { formatPrice } from "@/lib/format";
 import type { Product } from "@/lib/types";
 import { ProductStatusBadges } from "@/components/ProductStatusBadges";
@@ -127,6 +128,12 @@ export function QuickViewModal({
                   {formatPrice(active.price, settings)}
                 </p>
               </div>
+              <AfterpayMessaging
+                pageType="product"
+                amount={active.price}
+                skus={active.sku || active.id}
+                categories={active.category}
+              />
               <ProductStatusBadges product={active} />
             </div>
 

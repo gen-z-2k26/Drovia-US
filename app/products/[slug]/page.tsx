@@ -11,10 +11,9 @@ import {
   getSiteSettings,
   getSiteUrl,
 } from "@/lib/api";
-import { getBnplPublicConfig } from "@/lib/bnpl-server";
 import { toCardProduct } from "@/lib/catalog-card";
 import { isCatalogSlug } from "@/lib/catalog-slug";
-import type { ProductPaymentDisplay, BnplPublicConfig } from "@/lib/types";
+import type { ProductPaymentDisplay } from "@/lib/types";
 
 export const revalidate = 3600;
 
@@ -36,15 +35,6 @@ function emptyPayment(): ProductPaymentDisplay {
     affirmEnabled: false,
     afterpayEnabled: false,
     icons: [],
-  };
-}
-
-function emptyBnpl(): BnplPublicConfig {
-  return {
-    affirmPublicKey: "",
-    affirmEnv: "sandbox",
-    afterpayMpid: "",
-    afterpayPlacementId: "",
   };
 }
 
@@ -201,7 +191,6 @@ export default async function ProductPage({ params }: ProductPageProps) {
       <ProductDetail
         product={product}
         payment={await getProductPaymentDisplay(settings).catch(emptyPayment)}
-        bnpl={await getBnplPublicConfig().catch(emptyBnpl)}
         related={relatedCards}
       />
     </>

@@ -4,11 +4,7 @@ import { useRef, useState } from "react";
 import { IntentLink as Link } from "@/components/IntentLink";
 import { useRouter } from "next/navigation";
 import { Check, Share2 } from "lucide-react";
-import type {
-  BnplPublicConfig,
-  Product,
-  ProductPaymentDisplay,
-} from "@/lib/types";
+import type { Product, ProductPaymentDisplay } from "@/lib/types";
 import { defaultProductPage } from "@/lib/types";
 import { formatPrice } from "@/lib/format";
 import { useStore } from "@/lib/store-context";
@@ -33,12 +29,10 @@ import { cn } from "@/lib/utils";
 export function ProductDetail({
   product,
   payment,
-  bnpl,
   related = [],
 }: {
   product: Product;
   payment: ProductPaymentDisplay;
-  bnpl: BnplPublicConfig;
   related?: Product[];
 }) {
   const router = useRouter();
@@ -233,6 +227,15 @@ export function ProductDetail({
             </p>
           </div>
 
+          <div className="mt-2">
+            <BnplMessaging
+              product={product}
+              settings={settings}
+              affirmEnabled={payment.affirmEnabled}
+              afterpayEnabled={payment.afterpayEnabled}
+            />
+          </div>
+
           {page.enableRatingRow ? (
             <div className="mt-3">
               <ProductRatingRow product={product} />
@@ -253,16 +256,6 @@ export function ProductDetail({
               {product.description}
             </p>
           ) : null}
-
-          <div className="mt-4">
-            <BnplMessaging
-              product={product}
-              settings={settings}
-              config={bnpl}
-              affirmEnabled={payment.affirmEnabled}
-              afterpayEnabled={payment.afterpayEnabled}
-            />
-          </div>
 
           <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
             <QuantityPicker

@@ -402,7 +402,7 @@ export function AdminDashboard({
               {...cardDrag("afterpay")}
               id="afterpay"
               title="Afterpay"
-              detail="Merchant ID and secret key"
+              detail="Merchant ID, secret, and On-Site Messaging"
               status={view.afterpay.status}
               enabled={form.afterpay.enabled}
               onEnabled={(enabled) =>
@@ -434,6 +434,56 @@ export function AdminDashboard({
                   setForm((current) => ({ ...current, afterpay: { ...current.afterpay, secret } }))
                 }
               />
+              <Field
+                id="afterpay-mpid"
+                label="Messaging MPID"
+                value={form.afterpay.mpid}
+                mono
+                onChange={(mpid) =>
+                  setForm((current) => ({ ...current, afterpay: { ...current.afterpay, mpid } }))
+                }
+              />
+              <Field
+                id="afterpay-placement"
+                label="Product placement ID"
+                value={form.afterpay.placementId}
+                mono
+                onChange={(placementId) =>
+                  setForm((current) => ({
+                    ...current,
+                    afterpay: { ...current.afterpay, placementId },
+                  }))
+                }
+              />
+              <Field
+                id="afterpay-cart-placement"
+                label="Cart placement ID"
+                value={form.afterpay.cartPlacementId}
+                mono
+                onChange={(cartPlacementId) =>
+                  setForm((current) => ({
+                    ...current,
+                    afterpay: { ...current.afterpay, cartPlacementId },
+                  }))
+                }
+              />
+              <Field
+                id="afterpay-home-placement"
+                label="Homepage placement ID"
+                value={form.afterpay.homepagePlacementId}
+                mono
+                onChange={(homepagePlacementId) =>
+                  setForm((current) => ({
+                    ...current,
+                    afterpay: { ...current.afterpay, homepagePlacementId },
+                  }))
+                }
+              />
+              <p className="text-xs leading-relaxed text-muted-foreground sm:col-span-2">
+                Copy MPID and placement IDs from Afterpay Business Hub → On-Site Messaging →
+                Implementation Guide. Cart can reuse the product ID if you only created one
+                placement.
+              </p>
               <CardActions
                 pending={pending}
                 provider="afterpay"
@@ -543,6 +593,10 @@ function formFromView(view: AdminPaymentView): PaymentSettingsInput {
       mode: view.afterpay.mode,
       merchantId: view.afterpay.merchantId,
       secret: "",
+      mpid: view.afterpay.mpid,
+      placementId: view.afterpay.placementId,
+      cartPlacementId: view.afterpay.cartPlacementId,
+      homepagePlacementId: view.afterpay.homepagePlacementId,
     },
     reign: {
       enabled: view.reign.enabled,

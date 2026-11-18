@@ -13,6 +13,7 @@ declare module "react" {
         "data-item-skus"?: string;
         "data-item-categories"?: string;
         "data-is-eligible"?: string;
+        "data-cart-is-eligible"?: string;
       };
     }
   }

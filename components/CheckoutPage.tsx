@@ -69,6 +69,7 @@ import type {
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast-store";
 import { userErrorMessage } from "@/lib/user-error";
+import { AfterpayMessaging } from "@/components/AfterpayMessaging";
 
 type StartedCheckout =
   | { ok: true; session: CheckoutSessionResult }
@@ -812,7 +813,7 @@ export function CheckoutPage() {
 
             <button
               type="button"
-              className="mb-6 flex w-full items-center justify-between gap-3 bg-muted px-4 py-4 text-sm lg:hidden"
+              className="mb-2 flex w-full items-center justify-between gap-3 bg-muted px-4 py-4 text-sm lg:hidden"
               onClick={() => setShowSummary((open) => !open)}
             >
               <span className="flex items-center gap-2 font-medium text-accent">
@@ -825,9 +826,16 @@ export function CheckoutPage() {
                 {formatPrice(cart.totals.total, settings, cart.totals.currency)}
               </span>
             </button>
+            <div className="mb-6 px-4 lg:hidden">
+              <AfterpayMessaging
+                pageType="cart"
+                amount={cart.totals.total}
+                skus={cart.items.map((item) => item.productId).join(",")}
+              />
+            </div>
             {showSummary ? (
               <div className="mb-8 bg-muted p-4 lg:hidden">
-                <OrderSummary cart={cart} />
+                <OrderSummary cart={cart} afterpay={false} />
               </div>
             ) : null}
 
@@ -1376,7 +1384,13 @@ function CheckoutSelect({
   );
 }
 
-function OrderSummary({ cart }: { cart: StoreCart }) {
+function OrderSummary({
+  cart,
+  afterpay = true,
+}: {
+  cart: StoreCart;
+  afterpay?: boolean;
+}) {
   const { settings } = useStore();
   const setCart = useCartStore((state) => state.setCart);
   const [coupon, setCoupon] = useState("");
@@ -1574,6 +1588,13 @@ function OrderSummary({ cart }: { cart: StoreCart }) {
             {formatPrice(cart.totals.total, settings, cart.totals.currency)}
           </span>
         </div>
+        {afterpay ? (
+          <AfterpayMessaging
+            pageType="cart"
+            amount={cart.totals.total}
+            skus={cart.items.map((item) => item.productId).join(",")}
+          />
+        ) : null}
       </div>
     </div>
   );
