@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { defaultProductPage, type BnplPublicConfig, type StoreSettings } from "@/lib/types";
 import {
+  AFTERPAY_OSM,
   EMPTY_BNPL,
   afterpayAmountString,
   afterpayCurrencyOk,
@@ -63,11 +64,10 @@ describe("Afterpay promotional messaging", () => {
     ).toBe(false);
   });
 
-  it("still shows cart and homepage messaging when the product-page toggle is off", () => {
+  it("still shows cart messaging when the product-page toggle is off", () => {
     const store = settings({ enableAfterpayMsg: false });
     const bnpl = config({ afterpayEnabled: true });
     expect(shouldShowAfterpay(store, bnpl, true, "cart")).toBe(true);
-    expect(shouldShowAfterpay(store, bnpl, true, "homepage")).toBe(true);
   });
 
   it("hides messaging for currencies Afterpay does not support", () => {
@@ -83,27 +83,19 @@ describe("Afterpay promotional messaging", () => {
     expect(afterpayCurrencyOk(settings({ currency: "usd" }))).toBe(true);
   });
 
-  it("hides messaging when Afterpay is off and no MPID is configured", () => {
+  it("hides messaging when Afterpay is off", () => {
     expect(shouldShowAfterpay(settings(), EMPTY_BNPL, false, "cart")).toBe(false);
   });
 
-  it("uses cart placement, then product placement, and never invents a homepage id", () => {
-    const bnpl = config({
-      afterpayMpid: "mpid",
-      afterpayPlacementId: "product-1",
-      afterpayCartPlacementId: "cart-1",
-    });
-    expect(afterpayPlacementId(bnpl, "product")).toBe("product-1");
-    expect(afterpayPlacementId(bnpl, "cart")).toBe("cart-1");
-    expect(afterpayPlacementId(bnpl, "homepage")).toBe("");
-    expect(afterpayPlacementId(config({ afterpayPlacementId: "product-1" }), "cart")).toBe(
-      "product-1",
-    );
-    expect(canLoadAfterpayOsm(bnpl, "product")).toBe(true);
-    expect(canLoadAfterpayOsm(bnpl, "homepage")).toBe(false);
-    expect(read("components/AfterpayMessaging.tsx")).toMatch(
-      /pageType !== "homepage"/,
-    );
+  it("uses the hardcoded product and cart Square placement IDs", () => {
+    expect(afterpayPlacementId("product")).toBe(AFTERPAY_OSM.productPlacementId);
+    expect(afterpayPlacementId("cart")).toBe(AFTERPAY_OSM.cartPlacementId);
+    expect(afterpayPlacementId("homepage")).toBe("");
+    expect(canLoadAfterpayOsm("product")).toBe(true);
+    expect(canLoadAfterpayOsm("cart")).toBe(true);
+    expect(canLoadAfterpayOsm("homepage")).toBe(false);
+    expect(read("components/AfterpayMessaging.tsx")).toMatch(/AFTERPAY_OSM\.mpid/);
+    expect(read("components/AfterpayMessaging.tsx")).toMatch(/pageType === "homepage"/);
   });
 
   it("formats locales and amounts Afterpay accepts", () => {
@@ -129,20 +121,22 @@ describe("Afterpay promotional messaging", () => {
 });
 
 describe("Afterpay messaging placements", () => {
-  it("sits under the product price, homepage trust strip, cart total, and checkout total", () => {
+  it("sits under the product price, cart total, and checkout total", () => {
     expect(read("components/ProductDetail.tsx")).toMatch(/BnplMessaging/);
-    expect(read("components/sections/TrustStripSection.tsx")).toMatch(
-      /pageType="homepage"/,
+    expect(read("components/sections/TrustStripSection.tsx")).not.toMatch(
+      /AfterpayMessaging/,
     );
     expect(read("components/CartDrawer.tsx")).toMatch(/pageType="cart"/);
     expect(read("components/CheckoutPage.tsx")).toMatch(/pageType="cart"/);
   });
 
-  it("does not mix OSM and the legacy Afterpay.js script when an MPID exists", () => {
+  it("renders square-placement from the hardcoded snippets", () => {
     const source = read("components/AfterpayMessaging.tsx");
-    expect(source).toMatch(/canLoadAfterpayOsm/);
-    expect(source).toMatch(/osmAccount/);
-    expect(source).toMatch(/js\.afterpay\.com\/afterpay-1\.x\.js/);
+    expect(source).toMatch(/<square-placement/);
     expect(source).toMatch(/afterpayMarketplaceSrc/);
+    expect(source).not.toMatch(/js\.afterpay\.com\/afterpay-1\.x\.js/);
+    expect(read("components/admin/AdminDashboard.tsx")).not.toMatch(
+      /afterpay-mpid/,
+    );
   });
 });

@@ -434,56 +434,6 @@ export function AdminDashboard({
                   setForm((current) => ({ ...current, afterpay: { ...current.afterpay, secret } }))
                 }
               />
-              <Field
-                id="afterpay-mpid"
-                label="Messaging MPID"
-                value={form.afterpay.mpid}
-                mono
-                onChange={(mpid) =>
-                  setForm((current) => ({ ...current, afterpay: { ...current.afterpay, mpid } }))
-                }
-              />
-              <Field
-                id="afterpay-placement"
-                label="Product placement ID"
-                value={form.afterpay.placementId}
-                mono
-                onChange={(placementId) =>
-                  setForm((current) => ({
-                    ...current,
-                    afterpay: { ...current.afterpay, placementId },
-                  }))
-                }
-              />
-              <Field
-                id="afterpay-cart-placement"
-                label="Cart placement ID"
-                value={form.afterpay.cartPlacementId}
-                mono
-                onChange={(cartPlacementId) =>
-                  setForm((current) => ({
-                    ...current,
-                    afterpay: { ...current.afterpay, cartPlacementId },
-                  }))
-                }
-              />
-              <Field
-                id="afterpay-home-placement"
-                label="Homepage placement ID"
-                value={form.afterpay.homepagePlacementId}
-                mono
-                onChange={(homepagePlacementId) =>
-                  setForm((current) => ({
-                    ...current,
-                    afterpay: { ...current.afterpay, homepagePlacementId },
-                  }))
-                }
-              />
-              <p className="text-xs leading-relaxed text-muted-foreground sm:col-span-2">
-                Copy MPID and placement IDs from Afterpay Business Hub → On-Site Messaging →
-                Implementation Guide. Cart can reuse the product ID if you only created one
-                placement.
-              </p>
               <CardActions
                 pending={pending}
                 provider="afterpay"

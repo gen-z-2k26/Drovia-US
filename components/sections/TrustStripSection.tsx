@@ -1,4 +1,3 @@
-import { AfterpayMessaging } from "@/components/AfterpayMessaging";
 import { Reveal } from "@/components/sections/Reveal";
 import { getTrustIcon } from "@/lib/icons";
 import { pageContainer } from "@/lib/layout";
@@ -15,10 +14,6 @@ export function TrustStripSection() {
   return (
     <section aria-label="Benefits" className="border-b border-border bg-card/80">
       <div className={pageContainer("py-5 sm:py-6")}>
-        <AfterpayMessaging
-          pageType="homepage"
-          className="mb-4 text-sm text-muted-foreground"
-        />
         <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {items.map((item, index) => {
             const Icon = getTrustIcon(item.icon);

@@ -16,6 +16,13 @@ export const EMPTY_BNPL: BnplPublicConfig = {
   afterpayHomepagePlacementId: "",
 };
 
+/** Square on-site messaging snippets (product + cart only). */
+export const AFTERPAY_OSM = {
+  mpid: "851cd3de-8160-4f42-be75-966d3fb239c9",
+  productPlacementId: "c60a81a3-730b-499f-9fa2-1048e65e4455",
+  cartPlacementId: "79ee097e-67c7-4916-a9c7-6fd6504f6094",
+} as const;
+
 export function amountToCents(price: number, decimals: number) {
   const places = Number.isFinite(decimals) ? decimals : 2;
   return Math.round(price * 10 ** places);
@@ -75,38 +82,28 @@ export function shouldShowAfterpay(
   if (surface === "product-setting" && !settings.productPage.enableAfterpayMsg) {
     return false;
   }
-  if (!gatewayEnabled && !config.afterpayEnabled && !config.afterpayMpid) {
+  if (!gatewayEnabled && !config.afterpayEnabled) {
     return false;
   }
   return afterpayCurrencyOk(settings);
 }
 
-export function afterpayPlacementId(
-  config: BnplPublicConfig,
-  pageType: AfterpayPageType,
-) {
-  if (pageType === "cart") {
-    return config.afterpayCartPlacementId || config.afterpayPlacementId;
-  }
-  if (pageType === "homepage") {
-    return config.afterpayHomepagePlacementId;
-  }
-  return config.afterpayPlacementId;
+export function afterpayPlacementId(pageType: AfterpayPageType) {
+  if (pageType === "cart") return AFTERPAY_OSM.cartPlacementId;
+  if (pageType === "product") return AFTERPAY_OSM.productPlacementId;
+  return "";
 }
 
 export function canLoadAffirmWidget(config: BnplPublicConfig) {
   return Boolean(config.affirmPublicKey);
 }
 
-export function canLoadAfterpayOsm(
-  config: BnplPublicConfig,
-  pageType: AfterpayPageType,
-) {
-  return Boolean(config.afterpayMpid && afterpayPlacementId(config, pageType));
+export function canLoadAfterpayOsm(pageType: AfterpayPageType) {
+  return Boolean(afterpayPlacementId(pageType));
 }
 
-export function canLoadAfterpayWidget(config: BnplPublicConfig) {
-  return canLoadAfterpayOsm(config, "product");
+export function canLoadAfterpayWidget() {
+  return canLoadAfterpayOsm("product");
 }
 
 export function afterpayMarketplaceSrc(mode: "sandbox" | "live") {
