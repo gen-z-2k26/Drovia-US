@@ -4,6 +4,7 @@ declare module "react" {
   namespace JSX {
     interface IntrinsicElements {
       "square-placement": HTMLAttributes<HTMLElement> & {
+        key?: string | number | null;
         "data-mpid"?: string;
         "data-placement-id"?: string;
         "data-page-type"?: string;
